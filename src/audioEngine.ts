@@ -88,9 +88,9 @@ function durationFor(type: TypingEffectEvent['type']): number {
 }
 
 function gainFor(intensity: EffectIntensity): number {
-  if (intensity === 'low') return 0.018
-  if (intensity === 'high') return 0.055
-  return 0.035
+  if (intensity === 'low') return 0.012
+  if (intensity === 'high') return 0.05
+  return 0.028
 }
 
 declare global {
