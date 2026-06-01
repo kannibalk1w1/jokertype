@@ -1,0 +1,92 @@
+.jokertype-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 5;
+}
+
+.jokertype-particle {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  color: #ffdf6e;
+  font-family: "Courier New", monospace;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1;
+  pointer-events: none;
+  text-shadow:
+    1px 0 #111,
+    -1px 0 #111,
+    0 1px #111,
+    0 -1px #111;
+  animation: jokertype-float 620ms ease-out forwards;
+  will-change: transform, opacity;
+}
+
+.jokertype-enter {
+  color: #79f2ff;
+}
+
+.jokertype-tab {
+  color: #c79cff;
+}
+
+.jokertype-delete {
+  color: #ff6b6b;
+}
+
+.jokertype-chunk {
+  color: #9cff7a;
+}
+
+.jokertype-intensity-low {
+  font-size: 10px;
+}
+
+.jokertype-intensity-high {
+  font-size: 14px;
+}
+
+.jokertype-reduced-motion {
+  animation: jokertype-pulse 420ms ease-out forwards;
+}
+
+.jokertype-shake {
+  animation: jokertype-shake 120ms ease both;
+}
+
+@keyframes jokertype-float {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -100%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, calc(-100% - 34px)) scale(1.18);
+  }
+}
+
+@keyframes jokertype-pulse {
+  0% {
+    opacity: 0.95;
+    transform: translate(-50%, -100%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -100%) scale(1.08);
+  }
+}
+
+@keyframes jokertype-shake {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(-2px, 1px);
+  }
+  75% {
+    transform: translate(2px, -1px);
+  }
+}
