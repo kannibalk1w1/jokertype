@@ -26,7 +26,6 @@ export default class JokerTypePlugin extends Plugin {
 
   async onload(): Promise<void> {
     await this.loadSettings()
-    this.statusEl = this.addStatusBarItem()
     this.updateStatus()
     this.addSettingTab(new JokerTypeSettingTab(this.app, this))
     this.registerEditorExtension(this.extensionCompartment.of(this.createExtension()))
@@ -185,12 +184,25 @@ export default class JokerTypePlugin extends Plugin {
   }
 
   private updateStatus(): void {
-    if (!this.statusEl) return
-    if (this.settings.statusComboEnabled && this.comboCount > 1) {
-      this.statusEl.setText(`JokerType x${this.comboCount}`)
+    if (!this.settings.statusComboEnabled) {
+      this.removeStatusItem()
       return
     }
-    this.statusEl.setText('JokerType')
+
+    if (this.comboCount <= 1) {
+      this.statusEl?.remove()
+      this.statusEl = null
+      return
+    }
+
+    if (!this.statusEl) this.statusEl = this.addStatusBarItem()
+    this.statusEl.setText(`JokerType x${this.comboCount}`)
+  }
+
+  private removeStatusItem(): void {
+    this.statusEl?.remove()
+    this.statusEl = null
+    this.comboCount = 0
   }
 
   private registerCombo(events: number): void {
