@@ -23,6 +23,30 @@ export class JokerTypeSettingTab extends PluginSettingTab {
       .setHeading()
 
     new Setting(containerEl)
+      .setName('Enabled')
+      .setDesc('Turn all JokerType effects and sounds on or off.')
+      .addToggle((toggle) => {
+        toggle
+          .setValue(this.plugin.settings.enabled)
+          .onChange(async (value) => {
+            this.plugin.settings.enabled = value
+            await this.plugin.saveSettings()
+            this.plugin.refreshExtension()
+          })
+      })
+
+    new Setting(containerEl)
+      .setName('Hotkey')
+      .setDesc('Assign a hotkey in Obsidian Hotkeys for the command "Toggle JokerType".')
+      .addButton((button) => {
+        button
+          .setButtonText(this.plugin.settings.enabled ? 'Disable now' : 'Enable now')
+          .onClick(() => {
+            void this.plugin.toggleEnabled().then(() => this.display())
+          })
+      })
+
+    new Setting(containerEl)
       .setName('Preset')
       .setDesc('Apply a ready-made JokerType feel.')
       .addDropdown((dropdown) => {

@@ -28,6 +28,13 @@ export default class JokerTypePlugin extends Plugin {
     await this.loadSettings()
     this.updateStatus()
     this.addSettingTab(new JokerTypeSettingTab(this.app, this))
+    this.addCommand({
+      id: 'toggle-jokertype',
+      name: 'Toggle JokerType',
+      callback: () => {
+        void this.toggleEnabled()
+      }
+    })
     this.registerEditorExtension(this.extensionCompartment.of(this.createExtension()))
     this.registerEvent(this.app.workspace.on('editor-change', (editor) => this.handleEditorChange(editor)))
     this.app.workspace.updateOptions()
@@ -60,7 +67,20 @@ export default class JokerTypePlugin extends Plugin {
     this.updateStatus()
   }
 
+  async toggleEnabled(): Promise<void> {
+    this.settings.enabled = !this.settings.enabled
+    if (!this.settings.enabled) this.removeStatusItem()
+    await this.saveSettings()
+    this.refreshExtension()
+    new Notice(`JokerType ${this.settings.enabled ? 'enabled' : 'disabled'}.`)
+  }
+
   triggerTestEffect(): void {
+    if (!this.settings.enabled) {
+      new Notice('JokerType is disabled.')
+      return
+    }
+
     const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView)
     const editor = markdownView?.editor
     if (!editor) {
@@ -112,6 +132,7 @@ export default class JokerTypePlugin extends Plugin {
 
   private handleEditorChange(editor: Editor): void {
     window.setTimeout(() => {
+      if (!this.settings.enabled) return
       if (Date.now() - this.lastCmEventAt < 50) return
 
       const view = this.editorViewFrom(editor)
@@ -184,7 +205,7 @@ export default class JokerTypePlugin extends Plugin {
   }
 
   private updateStatus(): void {
-    if (!this.settings.statusComboEnabled) {
+    if (!this.settings.enabled || !this.settings.statusComboEnabled) {
       this.removeStatusItem()
       return
     }

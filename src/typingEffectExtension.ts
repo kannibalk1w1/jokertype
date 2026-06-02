@@ -26,6 +26,8 @@ class TypingEffectPlugin {
     if (!update.docChanged) return
 
     const settings = this.options.getSettings()
+    if (!settings.enabled) return
+
     const events = eventsFromUpdate(update, settings)
     let spawned = 0
     let missedCoords = 0

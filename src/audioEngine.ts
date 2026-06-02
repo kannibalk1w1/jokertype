@@ -16,6 +16,7 @@ export class PitchStreak {
 }
 
 export interface AudioEngineOptions {
+  enabled: boolean
   soundEnabled: boolean
   soundStyle: SoundStyle
   volume: number
@@ -31,7 +32,7 @@ export class AudioEngine {
   private loadingBuffers: Promise<void> | null = null
 
   play(event: TypingEffectEvent, options: AudioEngineOptions): boolean {
-    if (!options.soundEnabled) return false
+    if (!options.enabled || !options.soundEnabled) return false
     if (options.soundStyle === 'muted') return false
     if (event.type === 'delete') return false
 

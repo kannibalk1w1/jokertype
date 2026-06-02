@@ -4,6 +4,7 @@ export type SoundStyle = 'sampled' | 'procedural' | 'muted'
 export type VisualTheme = 'arcade' | 'neon' | 'monochrome' | 'terminal'
 
 export interface JokerTypeSettings {
+  enabled: boolean
   soundEnabled: boolean
   soundStyle: SoundStyle
   volume: number
@@ -22,6 +23,7 @@ export interface JokerTypeSettings {
 }
 
 export const DEFAULT_SETTINGS: JokerTypeSettings = {
+  enabled: true,
   soundEnabled: true,
   soundStyle: 'sampled',
   volume: 0.75,
@@ -41,6 +43,7 @@ export const DEFAULT_SETTINGS: JokerTypeSettings = {
 
 export const PRESET_SETTINGS: Record<JokerTypePreset, Partial<JokerTypeSettings>> = {
   subtle: {
+    enabled: true,
     soundEnabled: true,
     soundStyle: 'sampled',
     volume: 0.45,
@@ -56,6 +59,7 @@ export const PRESET_SETTINGS: Record<JokerTypePreset, Partial<JokerTypeSettings>
     throttleLargeChanges: true
   },
   classic: {
+    enabled: true,
     soundEnabled: true,
     soundStyle: 'sampled',
     volume: 0.75,
@@ -71,6 +75,7 @@ export const PRESET_SETTINGS: Record<JokerTypePreset, Partial<JokerTypeSettings>
     throttleLargeChanges: true
   },
   chaotic: {
+    enabled: true,
     soundEnabled: true,
     soundStyle: 'sampled',
     volume: 0.9,
@@ -86,6 +91,7 @@ export const PRESET_SETTINGS: Record<JokerTypePreset, Partial<JokerTypeSettings>
     throttleLargeChanges: true
   },
   'sound-only': {
+    enabled: true,
     soundEnabled: true,
     soundStyle: 'sampled',
     volume: 0.75,

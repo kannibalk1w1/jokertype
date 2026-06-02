@@ -6,6 +6,7 @@ describe('applyPreset', () => {
     const settings = applyPreset(DEFAULT_SETTINGS, 'chaotic')
 
     expect(settings.preset).toBe('chaotic')
+    expect(settings.enabled).toBe(true)
     expect(settings.effectIntensity).toBe('high')
     expect(settings.visualTheme).toBe('neon')
     expect(settings.cornerBracketsEnabled).toBe(true)
