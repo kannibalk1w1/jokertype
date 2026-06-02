@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="JokerType settings preview">
+  <rect width="1200" height="630" fill="#0f0d12"/>
+  <rect x="92" y="62" width="1084" height="506" rx="14" fill="#191722" stroke="#3a3346" stroke-width="2"/>
+  <text x="132" y="128" fill="#ffffff" font-family="Consolas, monospace" font-size="42" font-weight="700">JokerType Settings</text>
+  <text x="132" y="196" fill="#ffdf6e" font-family="Consolas, monospace" font-size="28">Preset</text>
+  <rect x="520" y="164" width="280" height="48" rx="8" fill="#242032" stroke="#4c435d"/>
+  <text x="544" y="198" fill="#e8ddd0" font-family="Consolas, monospace" font-size="24">Classic</text>
+  <text x="132" y="270" fill="#79f2ff" font-family="Consolas, monospace" font-size="28">Visual theme</text>
+  <rect x="520" y="238" width="280" height="48" rx="8" fill="#242032" stroke="#4c435d"/>
+  <text x="544" y="272" fill="#e8ddd0" font-family="Consolas, monospace" font-size="24">Arcade</text>
+  <text x="132" y="344" fill="#ff7bf7" font-family="Consolas, monospace" font-size="28">Glyph lifetime</text>
+  <rect x="520" y="322" width="420" height="10" rx="5" fill="#393245"/>
+  <rect x="520" y="322" width="260" height="10" rx="5" fill="#ffdf6e"/>
+  <circle cx="780" cy="327" r="18" fill="#79f2ff"/>
+  <text x="132" y="422" fill="#9cff7a" font-family="Consolas, monospace" font-size="28">Corner brackets</text>
+  <rect x="520" y="386" width="78" height="42" rx="21" fill="#2b2634" stroke="#4c435d"/>
+  <circle cx="542" cy="407" r="16" fill="#77717f"/>
+  <rect x="132" y="482" width="158" height="54" rx="8" fill="#ffdf6e"/>
+  <text x="166" y="518" fill="#141119" font-family="Consolas, monospace" font-size="24" font-weight="700">Test</text>
+</svg>

@@ -9,13 +9,15 @@ export interface TextChangeInput {
   from: number
   to: number
   inserted: string
+  deleteDirection?: 'backward' | 'forward' | 'unknown'
+  throttleLargeChanges?: boolean
 }
 
 export function classifyTextChange(change: TextChangeInput): TypingEffectEvent[] {
-  const { from, to, inserted } = change
+  const { from, to, inserted, deleteDirection = 'unknown', throttleLargeChanges = false } = change
 
   if (inserted.length === 0 && to > from) {
-    return [{ type: 'delete', from, to, direction: 'unknown' }]
+    return [{ type: 'delete', from, to, direction: deleteDirection }]
   }
 
   if (inserted === '\n') {
@@ -31,6 +33,9 @@ export function classifyTextChange(change: TextChangeInput): TypingEffectEvent[]
   }
 
   if (inserted.length > 0) {
+    if (throttleLargeChanges && [...inserted].length > 12) {
+      return [{ type: 'chunk', text: inserted, from, length: inserted.length, reason: 'paste' }]
+    }
     return [{ type: 'chunk', text: inserted, from, length: inserted.length, reason: 'unknown' }]
   }
 

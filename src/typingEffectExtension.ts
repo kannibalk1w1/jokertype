@@ -8,6 +8,7 @@ import type { JokerTypeSettings } from './settings'
 export interface TypingEffectExtensionOptions {
   getSettings: () => JokerTypeSettings
   audio: AudioEngine
+  onEvents?: (stats: { events: number; spawned: number; missedCoords: number; audio: number }) => void
 }
 
 export function createTypingEffectExtension(options: TypingEffectExtensionOptions): Extension {
@@ -25,12 +26,18 @@ class TypingEffectPlugin {
     if (!update.docChanged) return
 
     const settings = this.options.getSettings()
-    const events = eventsFromUpdate(update)
+    const events = eventsFromUpdate(update, settings)
+    let spawned = 0
+    let missedCoords = 0
+    let audio = 0
 
     for (const event of events) {
-      this.overlay.spawn(event, settings)
-      this.options.audio.play(event, settings)
+      if (this.overlay.spawn(event, settings)) spawned += 1
+      else missedCoords += 1
+      if (this.options.audio.play(event, settings)) audio += 1
     }
+
+    if (events.length > 0) this.options.onEvents?.({ events: events.length, spawned, missedCoords, audio })
   }
 
   destroy(): void {
@@ -38,7 +45,7 @@ class TypingEffectPlugin {
   }
 }
 
-export function eventsFromUpdate(update: ViewUpdate): TypingEffectEvent[] {
+export function eventsFromUpdate(update: ViewUpdate, settings: Pick<JokerTypeSettings, 'throttleLargeChanges'> = { throttleLargeChanges: false }): TypingEffectEvent[] {
   const events: TypingEffectEvent[] = []
 
   for (const transaction of update.transactions) {
@@ -48,7 +55,18 @@ export function eventsFromUpdate(update: ViewUpdate): TypingEffectEvent[] {
       const insertedText = inserted.toString()
       const from = insertedText.length > 0 ? fromB : fromA
       const to = insertedText.length > 0 ? fromB : toA
-      events.push(...classifyTextChange({ from, to, inserted: insertedText }))
+      const deleteDirection = transaction.isUserEvent('delete.backward')
+        ? 'backward'
+        : transaction.isUserEvent('delete.forward')
+          ? 'forward'
+          : 'unknown'
+      events.push(...classifyTextChange({
+        from,
+        to,
+        inserted: insertedText,
+        deleteDirection,
+        throttleLargeChanges: settings.throttleLargeChanges
+      }))
     })
   }
 

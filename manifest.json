@@ -1,9 +1,9 @@
 {
   "id": "jokertype",
   "name": "JokerType",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "minAppVersion": "1.5.0",
-  "description": "Game-like typing particles and procedural sounds for Obsidian.",
+  "description": "Game-like typing particles, special-key glyphs, and HyperType-style sounds for Obsidian.",
   "author": "kannibalk1w1",
   "authorUrl": "https://github.com/kannibalk1w1",
   "isDesktopOnly": true

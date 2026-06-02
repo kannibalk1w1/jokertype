@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="JokerType preview">
+  <rect width="1200" height="630" fill="#111014"/>
+  <rect x="72" y="72" width="1056" height="486" rx="18" fill="#1b1820" stroke="#3b3446" stroke-width="2"/>
+  <text x="120" y="156" fill="#e8ddd0" font-family="Consolas, monospace" font-size="34">A tiny thought lands here</text>
+  <text x="546" y="132" fill="#ffdf6e" font-family="Consolas, monospace" font-size="54" font-weight="700">J</text>
+  <text x="625" y="104" fill="#79f2ff" font-family="Consolas, monospace" font-size="42" font-weight="700">SPACE</text>
+  <text x="792" y="150" fill="#ff7bf7" font-family="Consolas, monospace" font-size="38" font-weight="700">SHIFT+A</text>
+  <text x="472" y="250" fill="#79f2ff" font-family="Consolas, monospace" font-size="62" font-weight="700">ENTER</text>
+  <text x="120" y="420" fill="#a6a0b6" font-family="Consolas, monospace" font-size="24">Card-game arcade typing particles and rising pitch sounds for Obsidian.</text>
+  <rect x="536" y="110" width="80" height="80" fill="none" stroke="#00ffff" stroke-width="6" stroke-dasharray="24 26"/>
+</svg>

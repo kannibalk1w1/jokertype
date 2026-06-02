@@ -2,51 +2,88 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  overflow: hidden;
-  z-index: 5;
+  overflow: visible;
+  z-index: 1000;
 }
 
 .jokertype-particle {
   position: absolute;
   transform: translate(-50%, -100%);
-  color: #ffdf6e;
-  font-family: "Courier New", monospace;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0;
+  color: var(--jokertype-color, #ffdf6e);
+  font-family: "HyperTypePixel", "m6x11plus", monospace;
+  font-size: var(--jokertype-font-size, 26px);
+  font-weight: 400;
+  letter-spacing: 1px;
   line-height: 1;
   pointer-events: none;
+  image-rendering: pixelated;
+  --jokertype-drift-x: -16px;
+  --jokertype-drift-y: -42px;
   text-shadow:
-    1px 0 #111,
-    -1px 0 #111,
-    0 1px #111,
-    0 -1px #111;
-  animation: jokertype-float 620ms ease-out forwards;
+    var(--jokertype-shadow,
+    2px 0 #111,
+    -2px 0 #111,
+    0 2px #111,
+    0 -2px #111,
+    0 0 10px currentColor);
+  animation: var(--jokertype-animation, jokertype-float 680ms cubic-bezier(.15,.9,.25,1) forwards);
   will-change: transform, opacity;
 }
 
 .jokertype-enter {
   color: #79f2ff;
+  font-size: 34px;
 }
 
 .jokertype-tab {
   color: #c79cff;
+  font-size: 30px;
 }
 
 .jokertype-delete {
   color: #ff6b6b;
+  font-size: 30px;
+  animation-name: jokertype-slice;
 }
 
 .jokertype-chunk {
   color: #9cff7a;
+  font-size: 30px;
 }
 
 .jokertype-intensity-low {
-  font-size: 10px;
+  font-size: 20px;
 }
 
 .jokertype-intensity-high {
-  font-size: 14px;
+  font-size: 34px;
+}
+
+.jokertype-corners {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  --jokertype-corner-color: #00ffff;
+  animation: jokertype-corner-expand var(--jokertype-corner-duration, 430ms) steps(6, end) forwards;
+  will-change: width, height, opacity, transform;
+}
+
+.jokertype-corners::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(var(--jokertype-corner-color), var(--jokertype-corner-color)) left top / 8px 2px no-repeat,
+    linear-gradient(var(--jokertype-corner-color), var(--jokertype-corner-color)) left top / 2px 8px no-repeat,
+    linear-gradient(var(--jokertype-corner-color), var(--jokertype-corner-color)) right top / 8px 2px no-repeat,
+    linear-gradient(var(--jokertype-corner-color), var(--jokertype-corner-color)) right top / 2px 8px no-repeat,
+    linear-gradient(var(--jokertype-corner-color), var(--jokertype-corner-color)) left bottom / 8px 2px no-repeat,
+    linear-gradient(var(--jokertype-corner-color), var(--jokertype-corner-color)) left bottom / 2px 8px no-repeat,
+    linear-gradient(var(--jokertype-corner-color), var(--jokertype-corner-color)) right bottom / 8px 2px no-repeat,
+    linear-gradient(var(--jokertype-corner-color), var(--jokertype-corner-color)) right bottom / 2px 8px no-repeat;
+  filter: drop-shadow(0 0 6px var(--jokertype-corner-color));
 }
 
 .jokertype-reduced-motion {
@@ -62,9 +99,58 @@
     opacity: 1;
     transform: translate(-50%, -100%) scale(1);
   }
+  22% {
+    opacity: 1;
+    transform: translate(-50%, -100%) scale(1);
+  }
   100% {
     opacity: 0;
-    transform: translate(-50%, calc(-100% - 34px)) scale(1.18);
+    transform: translate(calc(-50% + var(--jokertype-drift-x)), calc(-100% + var(--jokertype-drift-y))) scale(1.35);
+  }
+}
+
+@keyframes jokertype-pop-big {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -100%) scale(0.45) rotate(-5deg);
+  }
+  16% {
+    opacity: 1;
+    transform: translate(-50%, -120%) scale(1.65) rotate(3deg);
+  }
+  36% {
+    opacity: 1;
+    transform: translate(-50%, -120%) scale(1.45) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--jokertype-drift-x)), calc(-100% + var(--jokertype-drift-y))) scale(1.1) rotate(0deg);
+  }
+}
+
+@keyframes jokertype-slice {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -100%) scale(1.25) skewX(-8deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--jokertype-drift-x)), calc(-100% + var(--jokertype-drift-y))) scale(0.8) skewX(16deg);
+  }
+}
+
+@keyframes jokertype-corner-expand {
+  0% {
+    opacity: 1;
+    width: 16px;
+    height: 16px;
+    transform: translate(-50%, -50%) scale(0.85);
+  }
+  100% {
+    opacity: 0;
+    width: 54px;
+    height: 54px;
+    transform: translate(-50%, -50%) scale(1);
   }
 }
 
