@@ -20,6 +20,8 @@ export interface AudioEngineOptions {
   soundEnabled: boolean
   soundStyle: SoundStyle
   volume: number
+  customTypeSoundDataUrl: string | null
+  customEnterSoundDataUrl: string | null
   effectIntensity: EffectIntensity
 }
 
@@ -30,6 +32,10 @@ export class AudioEngine {
   private typeBuffer: AudioBuffer | null = null
   private enterBuffer: AudioBuffer | null = null
   private loadingBuffers: Promise<void> | null = null
+  private customTypeBuffer: AudioBuffer | null = null
+  private customEnterBuffer: AudioBuffer | null = null
+  private loadingCustomBuffers: Promise<void> | null = null
+  private customBufferKey = ''
 
   play(event: TypingEffectEvent, options: AudioEngineOptions): boolean {
     if (!options.enabled || !options.soundEnabled) return false
@@ -45,6 +51,15 @@ export class AudioEngine {
       if (options.soundStyle === 'procedural') {
         playSynthFallback(ctx, event.type, pitch, options.effectIntensity, options.volume)
         return true
+      }
+
+      if (options.soundStyle === 'custom') {
+        const customBuffer = this.customBufferFor(event, options)
+        if (customBuffer) {
+          playBuffer(ctx, customBuffer, pitch, sampleGainFor(options.effectIntensity, options.volume))
+          return true
+        }
+        void this.loadCustomBuffers(ctx, options)
       }
 
       const buffer = event.type === 'enter' ? this.enterBuffer : this.typeBuffer
@@ -70,6 +85,10 @@ export class AudioEngine {
     this.typeBuffer = null
     this.enterBuffer = null
     this.loadingBuffers = null
+    this.customTypeBuffer = null
+    this.customEnterBuffer = null
+    this.loadingCustomBuffers = null
+    this.customBufferKey = ''
     const ctx = this.ctx
     this.ctx = null
     if (ctx && ctx.state !== 'closed') {
@@ -105,6 +124,46 @@ export class AudioEngine {
     })
 
     return this.loadingBuffers
+  }
+
+  private customBufferFor(event: TypingEffectEvent, options: AudioEngineOptions): AudioBuffer | null {
+    const key = customSoundKey(options)
+    if (key !== this.customBufferKey) {
+      this.customTypeBuffer = null
+      this.customEnterBuffer = null
+      this.loadingCustomBuffers = null
+      this.customBufferKey = key
+      return null
+    }
+
+    if (event.type === 'enter') return this.customEnterBuffer ?? this.customTypeBuffer
+    return this.customTypeBuffer
+  }
+
+  private loadCustomBuffers(ctx: AudioContext, options: AudioEngineOptions): Promise<void> {
+    const key = customSoundKey(options)
+    if (!key) return Promise.resolve()
+    if (key !== this.customBufferKey) {
+      this.customBufferKey = key
+      this.customTypeBuffer = null
+      this.customEnterBuffer = null
+      this.loadingCustomBuffers = null
+    }
+    if (this.loadingCustomBuffers) return this.loadingCustomBuffers
+
+    this.loadingCustomBuffers = Promise.all([
+      decodeOptionalDataUrlAudio(ctx, options.customTypeSoundDataUrl),
+      decodeOptionalDataUrlAudio(ctx, options.customEnterSoundDataUrl)
+    ]).then(([typeBuffer, enterBuffer]) => {
+      this.customTypeBuffer = typeBuffer
+      this.customEnterBuffer = enterBuffer
+    }).catch(() => {
+      this.customTypeBuffer = null
+      this.customEnterBuffer = null
+      this.loadingCustomBuffers = null
+    })
+
+    return this.loadingCustomBuffers
   }
 }
 
@@ -169,6 +228,17 @@ async function decodeBase64Audio(ctx: AudioContext, base64: string): Promise<Aud
     bytes[index] = binary.charCodeAt(index)
   }
   return ctx.decodeAudioData(bytes.buffer.slice(0))
+}
+
+async function decodeOptionalDataUrlAudio(ctx: AudioContext, dataUrl: string | null): Promise<AudioBuffer | null> {
+  if (!dataUrl) return null
+  const commaIndex = dataUrl.indexOf(',')
+  if (commaIndex < 0) return null
+  return decodeBase64Audio(ctx, dataUrl.slice(commaIndex + 1))
+}
+
+function customSoundKey(options: AudioEngineOptions): string {
+  return `${options.customTypeSoundDataUrl ?? ''}|${options.customEnterSoundDataUrl ?? ''}`
 }
 
 function soundSpecFor(type: TypingEffectEvent['type'], intensity: EffectIntensity, volume: number): SoundSpec {

@@ -95,11 +95,70 @@ export class JokerTypeSettingTab extends PluginSettingTab {
         dropdown
           .addOption('sampled', 'Sampled')
           .addOption('procedural', 'Procedural')
+          .addOption('custom', 'Custom')
           .addOption('muted', 'Muted')
           .setValue(this.plugin.settings.soundStyle)
           .onChange(async (value) => {
             this.plugin.settings.soundStyle = value as SoundStyle
             this.plugin.settings.soundEnabled = value !== 'muted'
+            await this.plugin.saveSettings()
+            this.plugin.refreshExtension()
+            this.display()
+          })
+      })
+
+    new Setting(containerEl)
+      .setName('Custom typing sound')
+      .setDesc(this.plugin.settings.customTypeSoundDataUrl ? 'Custom typing sound loaded.' : 'Upload an audio file for normal typing sounds.')
+      .addButton((button) => {
+        button
+          .setButtonText('Upload')
+          .onClick(() => {
+            this.pickSoundFile(async (dataUrl) => {
+              this.plugin.settings.customTypeSoundDataUrl = dataUrl
+              this.plugin.settings.soundStyle = 'custom'
+              this.plugin.settings.soundEnabled = true
+              await this.plugin.saveSettings()
+              this.plugin.refreshExtension()
+              this.display()
+            })
+          })
+      })
+      .addButton((button) => {
+        button
+          .setButtonText('Clear')
+          .setDisabled(!this.plugin.settings.customTypeSoundDataUrl)
+          .onClick(async () => {
+            this.plugin.settings.customTypeSoundDataUrl = null
+            await this.plugin.saveSettings()
+            this.plugin.refreshExtension()
+            this.display()
+          })
+      })
+
+    new Setting(containerEl)
+      .setName('Custom enter sound')
+      .setDesc(this.plugin.settings.customEnterSoundDataUrl ? 'Custom enter sound loaded.' : 'Optional audio file for Enter. If empty, JokerType reuses the typing sound.')
+      .addButton((button) => {
+        button
+          .setButtonText('Upload')
+          .onClick(() => {
+            this.pickSoundFile(async (dataUrl) => {
+              this.plugin.settings.customEnterSoundDataUrl = dataUrl
+              this.plugin.settings.soundStyle = 'custom'
+              this.plugin.settings.soundEnabled = true
+              await this.plugin.saveSettings()
+              this.plugin.refreshExtension()
+              this.display()
+            })
+          })
+      })
+      .addButton((button) => {
+        button
+          .setButtonText('Clear')
+          .setDisabled(!this.plugin.settings.customEnterSoundDataUrl)
+          .onClick(async () => {
+            this.plugin.settings.customEnterSoundDataUrl = null
             await this.plugin.saveSettings()
             this.plugin.refreshExtension()
             this.display()
@@ -272,5 +331,22 @@ export class JokerTypeSettingTab extends PluginSettingTab {
             this.plugin.refreshExtension()
           })
       })
+  }
+
+  private pickSoundFile(onLoad: (dataUrl: string) => void | Promise<void>): void {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'audio/*'
+    input.onchange = () => {
+      const file = input.files?.[0]
+      if (!file) return
+
+      const reader = new FileReader()
+      reader.onload = () => {
+        if (typeof reader.result === 'string') void onLoad(reader.result)
+      }
+      reader.readAsDataURL(file)
+    }
+    input.click()
   }
 }

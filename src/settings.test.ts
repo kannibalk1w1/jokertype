@@ -18,6 +18,8 @@ describe('applyPreset', () => {
     const settings = applyPreset(DEFAULT_SETTINGS, 'sound-only')
 
     expect(settings.soundEnabled).toBe(true)
+    expect(settings.customTypeSoundDataUrl).toBeNull()
+    expect(settings.customEnterSoundDataUrl).toBeNull()
     expect(settings.soundStyle).toBe('sampled')
     expect(settings.visualTheme).toBe('terminal')
     expect(settings.textGlyphsEnabled).toBe(false)

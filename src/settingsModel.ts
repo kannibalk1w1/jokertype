@@ -1,6 +1,6 @@
 export type EffectIntensity = 'low' | 'medium' | 'high'
 export type JokerTypePreset = 'subtle' | 'classic' | 'chaotic' | 'sound-only'
-export type SoundStyle = 'sampled' | 'procedural' | 'muted'
+export type SoundStyle = 'sampled' | 'procedural' | 'custom' | 'muted'
 export type VisualTheme = 'arcade' | 'neon' | 'monochrome' | 'terminal'
 
 export interface JokerTypeSettings {
@@ -8,6 +8,8 @@ export interface JokerTypeSettings {
   soundEnabled: boolean
   soundStyle: SoundStyle
   volume: number
+  customTypeSoundDataUrl: string | null
+  customEnterSoundDataUrl: string | null
   visualTheme: VisualTheme
   effectIntensity: EffectIntensity
   textGlyphsEnabled: boolean
@@ -27,6 +29,8 @@ export const DEFAULT_SETTINGS: JokerTypeSettings = {
   soundEnabled: true,
   soundStyle: 'sampled',
   volume: 0.75,
+  customTypeSoundDataUrl: null,
+  customEnterSoundDataUrl: null,
   visualTheme: 'arcade',
   effectIntensity: 'medium',
   textGlyphsEnabled: true,

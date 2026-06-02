@@ -12,6 +12,7 @@ JokerType is a desktop-first Obsidian plugin that makes typing feel game-like: p
 - Presets: Subtle, Classic, Chaotic, and Sound only.
 - Fine-grained toggles for text glyphs, enter effects, delete effects, corner brackets, editor shake, and status combo counter.
 - Controls for volume, sound style, effect intensity, glyph lifetime, reduced motion, and large paste throttling.
+- Custom typing and Enter sound uploads stored in Obsidian plugin data.
 - Command palette support for `Toggle JokerType`, which can be assigned a hotkey in Obsidian's Hotkeys settings.
 - Test effect button for quick tuning.
 
@@ -35,7 +36,7 @@ Use `Glyph lifetime` to tune how long particles remain visible. Disable `Corner 
 
 ## Privacy and permissions
 
-JokerType does not use telemetry, ads, analytics, accounts, network requests, or external file access. It observes editor transactions inside Obsidian, stores plugin settings with Obsidian's plugin data API, and plays local embedded audio assets.
+JokerType does not use telemetry, ads, analytics, accounts, network requests, or external file access. It observes editor transactions inside Obsidian, stores plugin settings and optional uploaded custom sound data with Obsidian's plugin data API, and plays local embedded or user-provided audio assets.
 
 ## Development
 
