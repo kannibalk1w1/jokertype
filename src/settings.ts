@@ -187,6 +187,21 @@ export class JokerTypeSettingTab extends PluginSettingTab {
       })
 
     new Setting(containerEl)
+      .setName('Max pitch')
+      .setDesc('Highest pitch multiplier reached during a fast typing streak.')
+      .addSlider((slider) => {
+        slider
+          .setLimits(1, 1.6, 0.05)
+          .setDynamicTooltip()
+          .setValue(this.plugin.settings.pitchMax)
+          .onChange(async (value) => {
+            this.plugin.settings.pitchMax = value
+            await this.plugin.saveSettings()
+            this.plugin.refreshExtension()
+          })
+      })
+
+    new Setting(containerEl)
       .setName('Pitch rise steps')
       .setDesc('How many rapid keystrokes it takes to reach maximum pitch.')
       .addSlider((slider) => {

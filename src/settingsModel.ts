@@ -13,6 +13,7 @@ export interface JokerTypeSettings {
   customEnterSoundDataUrl: string | null
   customDeleteSoundDataUrl: string | null
   customPasteSoundDataUrl: string | null
+  pitchMax: number
   pitchRiseSteps: number
   pitchResetMs: number
   visualTheme: VisualTheme
@@ -39,6 +40,7 @@ export const DEFAULT_SETTINGS: JokerTypeSettings = {
   customEnterSoundDataUrl: null,
   customDeleteSoundDataUrl: null,
   customPasteSoundDataUrl: null,
+  pitchMax: 1.3,
   pitchRiseSteps: 35,
   pitchResetMs: 300,
   visualTheme: 'arcade',

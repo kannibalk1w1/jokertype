@@ -5,11 +5,12 @@ import { ENTER_SOUND_BASE64, TYPE_SOUND_BASE64 } from './hyperTypeSounds'
 export class PitchStreak {
   private level = 0
 
-  nextPitch(riseSteps = 35): number {
+  nextPitch(riseSteps = 35, maxPitch = 1.3): number {
     this.level += 1
     const safeSteps = Math.max(1, riseSteps)
-    const increment = 0.3 / safeSteps
-    return Math.min(1.3, Math.max(0.95, 1 + this.level * increment))
+    const safeMaxPitch = Math.min(1.6, Math.max(1, maxPitch))
+    const increment = (safeMaxPitch - 1) / safeSteps
+    return Math.min(safeMaxPitch, Math.max(0.95, 1 + this.level * increment))
   }
 
   reset(): void {
@@ -27,6 +28,7 @@ export interface AudioEngineOptions {
   customEnterSoundDataUrl: string | null
   customDeleteSoundDataUrl: string | null
   customPasteSoundDataUrl: string | null
+  pitchMax: number
   pitchRiseSteps: number
   pitchResetMs: number
   effectIntensity: EffectIntensity
@@ -117,8 +119,8 @@ export class AudioEngine {
     return this.ctx
   }
 
-  private nextPitch(options: Pick<AudioEngineOptions, 'pitchRiseSteps' | 'pitchResetMs'>): number {
-    const pitch = this.streak.nextPitch(options.pitchRiseSteps)
+  private nextPitch(options: Pick<AudioEngineOptions, 'pitchMax' | 'pitchRiseSteps' | 'pitchResetMs'>): number {
+    const pitch = this.streak.nextPitch(options.pitchRiseSteps, options.pitchMax)
     if (this.resetTimer) clearTimeout(this.resetTimer)
     this.resetTimer = setTimeout(() => this.streak.reset(), Math.max(50, options.pitchResetMs))
     return pitch

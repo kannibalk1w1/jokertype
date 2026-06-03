@@ -16,10 +16,17 @@ describe('PitchStreak', () => {
     expect(pitch).toBe(1.3)
   })
 
+  it('can cap pitch at a higher user-selected maximum', () => {
+    const streak = new PitchStreak()
+    let pitch = 1
+    for (let i = 0; i < 100; i += 1) pitch = streak.nextPitch(30, 1.6)
+    expect(pitch).toBe(1.6)
+  })
+
   it('can use a longer pitch ramp', () => {
     const streak = new PitchStreak()
-    expect(streak.nextPitch(60)).toBeCloseTo(1.005)
-    expect(streak.nextPitch(60)).toBeCloseTo(1.01)
+    expect(streak.nextPitch(60, 1.3)).toBeCloseTo(1.005)
+    expect(streak.nextPitch(60, 1.3)).toBeCloseTo(1.01)
   })
 
   it('can be reset', () => {

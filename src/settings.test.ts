@@ -23,6 +23,7 @@ describe('applyPreset', () => {
     expect(settings.customEnterSoundDataUrl).toBeNull()
     expect(settings.customDeleteSoundDataUrl).toBeNull()
     expect(settings.customPasteSoundDataUrl).toBeNull()
+    expect(settings.pitchMax).toBe(1.3)
     expect(settings.pitchRiseSteps).toBe(35)
     expect(settings.pitchResetMs).toBe(300)
     expect(settings.soundStyle).toBe('sampled')
