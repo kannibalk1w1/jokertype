@@ -19,7 +19,12 @@ describe('applyPreset', () => {
 
     expect(settings.soundEnabled).toBe(true)
     expect(settings.customTypeSoundDataUrl).toBeNull()
+    expect(settings.customSpaceSoundDataUrl).toBeNull()
     expect(settings.customEnterSoundDataUrl).toBeNull()
+    expect(settings.customDeleteSoundDataUrl).toBeNull()
+    expect(settings.customPasteSoundDataUrl).toBeNull()
+    expect(settings.pitchRiseSteps).toBe(35)
+    expect(settings.pitchResetMs).toBe(300)
     expect(settings.soundStyle).toBe('sampled')
     expect(settings.visualTheme).toBe('terminal')
     expect(settings.textGlyphsEnabled).toBe(false)

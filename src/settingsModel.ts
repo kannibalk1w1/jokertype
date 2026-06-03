@@ -9,7 +9,12 @@ export interface JokerTypeSettings {
   soundStyle: SoundStyle
   volume: number
   customTypeSoundDataUrl: string | null
+  customSpaceSoundDataUrl: string | null
   customEnterSoundDataUrl: string | null
+  customDeleteSoundDataUrl: string | null
+  customPasteSoundDataUrl: string | null
+  pitchRiseSteps: number
+  pitchResetMs: number
   visualTheme: VisualTheme
   effectIntensity: EffectIntensity
   textGlyphsEnabled: boolean
@@ -30,7 +35,12 @@ export const DEFAULT_SETTINGS: JokerTypeSettings = {
   soundStyle: 'sampled',
   volume: 0.75,
   customTypeSoundDataUrl: null,
+  customSpaceSoundDataUrl: null,
   customEnterSoundDataUrl: null,
+  customDeleteSoundDataUrl: null,
+  customPasteSoundDataUrl: null,
+  pitchRiseSteps: 35,
+  pitchResetMs: 300,
   visualTheme: 'arcade',
   effectIntensity: 'medium',
   textGlyphsEnabled: true,

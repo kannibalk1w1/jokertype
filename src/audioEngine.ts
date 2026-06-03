@@ -5,9 +5,11 @@ import { ENTER_SOUND_BASE64, TYPE_SOUND_BASE64 } from './hyperTypeSounds'
 export class PitchStreak {
   private level = 0
 
-  nextPitch(): number {
+  nextPitch(riseSteps = 35): number {
     this.level += 1
-    return Math.min(1.3, Math.max(0.95, 1 + this.level * 0.01))
+    const safeSteps = Math.max(1, riseSteps)
+    const increment = 0.3 / safeSteps
+    return Math.min(1.3, Math.max(0.95, 1 + this.level * increment))
   }
 
   reset(): void {
@@ -21,7 +23,12 @@ export interface AudioEngineOptions {
   soundStyle: SoundStyle
   volume: number
   customTypeSoundDataUrl: string | null
+  customSpaceSoundDataUrl: string | null
   customEnterSoundDataUrl: string | null
+  customDeleteSoundDataUrl: string | null
+  customPasteSoundDataUrl: string | null
+  pitchRiseSteps: number
+  pitchResetMs: number
   effectIntensity: EffectIntensity
 }
 
@@ -33,21 +40,23 @@ export class AudioEngine {
   private enterBuffer: AudioBuffer | null = null
   private loadingBuffers: Promise<void> | null = null
   private customTypeBuffer: AudioBuffer | null = null
+  private customSpaceBuffer: AudioBuffer | null = null
   private customEnterBuffer: AudioBuffer | null = null
+  private customDeleteBuffer: AudioBuffer | null = null
+  private customPasteBuffer: AudioBuffer | null = null
   private loadingCustomBuffers: Promise<void> | null = null
   private customBufferKey = ''
 
   play(event: TypingEffectEvent, options: AudioEngineOptions): boolean {
     if (!options.enabled || !options.soundEnabled) return false
     if (options.soundStyle === 'muted') return false
-    if (event.type === 'delete') return false
 
     try {
       const ctx = this.ensureContext()
       if (!ctx) return false
       if (ctx.state === 'suspended') void ctx.resume().catch(() => {})
 
-      const pitch = this.nextPitch()
+      const pitch = this.nextPitch(options)
       if (options.soundStyle === 'procedural') {
         playSynthFallback(ctx, event.type, pitch, options.effectIntensity, options.volume)
         return true
@@ -61,6 +70,8 @@ export class AudioEngine {
         }
         void this.loadCustomBuffers(ctx, options)
       }
+
+      if (event.type === 'delete') return false
 
       const buffer = event.type === 'enter' ? this.enterBuffer : this.typeBuffer
 
@@ -86,7 +97,10 @@ export class AudioEngine {
     this.enterBuffer = null
     this.loadingBuffers = null
     this.customTypeBuffer = null
+    this.customSpaceBuffer = null
     this.customEnterBuffer = null
+    this.customDeleteBuffer = null
+    this.customPasteBuffer = null
     this.loadingCustomBuffers = null
     this.customBufferKey = ''
     const ctx = this.ctx
@@ -103,10 +117,10 @@ export class AudioEngine {
     return this.ctx
   }
 
-  private nextPitch(): number {
-    const pitch = this.streak.nextPitch()
+  private nextPitch(options: Pick<AudioEngineOptions, 'pitchRiseSteps' | 'pitchResetMs'>): number {
+    const pitch = this.streak.nextPitch(options.pitchRiseSteps)
     if (this.resetTimer) clearTimeout(this.resetTimer)
-    this.resetTimer = setTimeout(() => this.streak.reset(), 300)
+    this.resetTimer = setTimeout(() => this.streak.reset(), Math.max(50, options.pitchResetMs))
     return pitch
   }
 
@@ -130,13 +144,19 @@ export class AudioEngine {
     const key = customSoundKey(options)
     if (key !== this.customBufferKey) {
       this.customTypeBuffer = null
+      this.customSpaceBuffer = null
       this.customEnterBuffer = null
+      this.customDeleteBuffer = null
+      this.customPasteBuffer = null
       this.loadingCustomBuffers = null
       this.customBufferKey = key
       return null
     }
 
     if (event.type === 'enter') return this.customEnterBuffer ?? this.customTypeBuffer
+    if (event.type === 'delete') return this.customDeleteBuffer
+    if (event.type === 'chunk') return this.customPasteBuffer ?? this.customTypeBuffer
+    if (event.type === 'char' && event.text === ' ') return this.customSpaceBuffer ?? this.customTypeBuffer
     return this.customTypeBuffer
   }
 
@@ -146,20 +166,32 @@ export class AudioEngine {
     if (key !== this.customBufferKey) {
       this.customBufferKey = key
       this.customTypeBuffer = null
+      this.customSpaceBuffer = null
       this.customEnterBuffer = null
+      this.customDeleteBuffer = null
+      this.customPasteBuffer = null
       this.loadingCustomBuffers = null
     }
     if (this.loadingCustomBuffers) return this.loadingCustomBuffers
 
     this.loadingCustomBuffers = Promise.all([
       decodeOptionalDataUrlAudio(ctx, options.customTypeSoundDataUrl),
-      decodeOptionalDataUrlAudio(ctx, options.customEnterSoundDataUrl)
-    ]).then(([typeBuffer, enterBuffer]) => {
+      decodeOptionalDataUrlAudio(ctx, options.customSpaceSoundDataUrl),
+      decodeOptionalDataUrlAudio(ctx, options.customEnterSoundDataUrl),
+      decodeOptionalDataUrlAudio(ctx, options.customDeleteSoundDataUrl),
+      decodeOptionalDataUrlAudio(ctx, options.customPasteSoundDataUrl)
+    ]).then(([typeBuffer, spaceBuffer, enterBuffer, deleteBuffer, pasteBuffer]) => {
       this.customTypeBuffer = typeBuffer
+      this.customSpaceBuffer = spaceBuffer
       this.customEnterBuffer = enterBuffer
+      this.customDeleteBuffer = deleteBuffer
+      this.customPasteBuffer = pasteBuffer
     }).catch(() => {
       this.customTypeBuffer = null
+      this.customSpaceBuffer = null
       this.customEnterBuffer = null
+      this.customDeleteBuffer = null
+      this.customPasteBuffer = null
       this.loadingCustomBuffers = null
     })
 
@@ -238,7 +270,13 @@ async function decodeOptionalDataUrlAudio(ctx: AudioContext, dataUrl: string | n
 }
 
 function customSoundKey(options: AudioEngineOptions): string {
-  return `${options.customTypeSoundDataUrl ?? ''}|${options.customEnterSoundDataUrl ?? ''}`
+  return [
+    options.customTypeSoundDataUrl ?? '',
+    options.customSpaceSoundDataUrl ?? '',
+    options.customEnterSoundDataUrl ?? '',
+    options.customDeleteSoundDataUrl ?? '',
+    options.customPasteSoundDataUrl ?? ''
+  ].join('|')
 }
 
 function soundSpecFor(type: TypingEffectEvent['type'], intensity: EffectIntensity, volume: number): SoundSpec {

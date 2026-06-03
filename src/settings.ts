@@ -136,6 +136,8 @@ export class JokerTypeSettingTab extends PluginSettingTab {
           })
       })
 
+    this.addCustomSoundSetting('Custom space sound', 'customSpaceSoundDataUrl', 'Optional audio file for Space. If empty, JokerType reuses the typing sound.')
+
     new Setting(containerEl)
       .setName('Custom enter sound')
       .setDesc(this.plugin.settings.customEnterSoundDataUrl ? 'Custom enter sound loaded.' : 'Optional audio file for Enter. If empty, JokerType reuses the typing sound.')
@@ -165,6 +167,10 @@ export class JokerTypeSettingTab extends PluginSettingTab {
           })
       })
 
+    this.addCustomSoundSetting('Custom backspace/delete sound', 'customDeleteSoundDataUrl', 'Optional audio file for Backspace and Delete. If empty, those keys stay quiet.')
+
+    this.addCustomSoundSetting('Custom paste sound', 'customPasteSoundDataUrl', 'Optional audio file for paste and other large edits. If empty, JokerType reuses the typing sound.')
+
     new Setting(containerEl)
       .setName('Volume')
       .setDesc('Controls typing sound volume.')
@@ -175,6 +181,36 @@ export class JokerTypeSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.volume)
           .onChange(async (value) => {
             this.plugin.settings.volume = value
+            await this.plugin.saveSettings()
+            this.plugin.refreshExtension()
+          })
+      })
+
+    new Setting(containerEl)
+      .setName('Pitch rise steps')
+      .setDesc('How many rapid keystrokes it takes to reach maximum pitch.')
+      .addSlider((slider) => {
+        slider
+          .setLimits(3, 80, 1)
+          .setDynamicTooltip()
+          .setValue(this.plugin.settings.pitchRiseSteps)
+          .onChange(async (value) => {
+            this.plugin.settings.pitchRiseSteps = value
+            await this.plugin.saveSettings()
+            this.plugin.refreshExtension()
+          })
+      })
+
+    new Setting(containerEl)
+      .setName('Pitch reset delay')
+      .setDesc('How long the pitch streak survives after typing pauses.')
+      .addSlider((slider) => {
+        slider
+          .setLimits(150, 1200, 50)
+          .setDynamicTooltip()
+          .setValue(this.plugin.settings.pitchResetMs)
+          .onChange(async (value) => {
+            this.plugin.settings.pitchResetMs = value
             await this.plugin.saveSettings()
             this.plugin.refreshExtension()
           })
@@ -329,6 +365,37 @@ export class JokerTypeSettingTab extends PluginSettingTab {
             this.plugin.settings.editorShake = value
             await this.plugin.saveSettings()
             this.plugin.refreshExtension()
+          })
+      })
+  }
+
+  private addCustomSoundSetting(name: string, key: 'customSpaceSoundDataUrl' | 'customDeleteSoundDataUrl' | 'customPasteSoundDataUrl', emptyDescription: string): void {
+    new Setting(this.containerEl)
+      .setName(name)
+      .setDesc(this.plugin.settings[key] ? `${name.replace('Custom ', '')} loaded.` : emptyDescription)
+      .addButton((button) => {
+        button
+          .setButtonText('Upload')
+          .onClick(() => {
+            this.pickSoundFile(async (dataUrl) => {
+              this.plugin.settings[key] = dataUrl
+              this.plugin.settings.soundStyle = 'custom'
+              this.plugin.settings.soundEnabled = true
+              await this.plugin.saveSettings()
+              this.plugin.refreshExtension()
+              this.display()
+            })
+          })
+      })
+      .addButton((button) => {
+        button
+          .setButtonText('Clear')
+          .setDisabled(!this.plugin.settings[key])
+          .onClick(async () => {
+            this.plugin.settings[key] = null
+            await this.plugin.saveSettings()
+            this.plugin.refreshExtension()
+            this.display()
           })
       })
   }
