@@ -62,6 +62,10 @@ export default class JokerTypePlugin extends Plugin {
     await this.saveData(this.settings)
   }
 
+  async validateCustomSound(dataUrl: string): Promise<void> {
+    await this.audio.validateCustomSound(dataUrl)
+  }
+
   refreshExtension(): void {
     this.app.workspace.updateOptions()
     this.updateStatus()
