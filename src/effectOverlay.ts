@@ -132,7 +132,9 @@ function tokenFor(event: TypingEffectEvent): string {
   if (event.type === 'enter') return 'ENTER'
   if (event.type === 'tab') return 'TAB'
   if (event.type === 'delete') return event.direction === 'forward' ? 'DELETE' : 'BACKSPACE'
-  return 'PASTE'
+  if (event.reason === 'paste') return 'PASTE'
+  if (event.reason === 'autocomplete') return 'COMPLETE'
+  return 'INPUT'
 }
 
 function shouldSpawnEvent(event: TypingEffectEvent, settings: JokerTypeSettings): boolean {

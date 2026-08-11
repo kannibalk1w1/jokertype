@@ -3,7 +3,7 @@ import { Compartment, type Extension } from '@codemirror/state'
 import type { EditorView } from '@codemirror/view'
 import { AudioEngine } from './audioEngine'
 import { EffectOverlay } from './effectOverlay'
-import { createTypingEffectExtension } from './typingEffectExtension'
+import { createTypingEffectExtension, PasteTracker } from './typingEffectExtension'
 import { classifyTextChange } from './changeClassifier'
 import type { TypingEffectEvent } from './changeClassifier'
 import { DEFAULT_SETTINGS, JokerTypeSettingTab, type JokerTypeSettings } from './settings'
@@ -12,6 +12,7 @@ export default class JokerTypePlugin extends Plugin {
   settings: JokerTypeSettings = { ...DEFAULT_SETTINGS }
   private extensionCompartment = new Compartment()
   private audio = new AudioEngine()
+  private pasteTracker = new PasteTracker()
   private statusEl: HTMLElement | null = null
   private eventCount = 0
   private spawnCount = 0
@@ -45,6 +46,7 @@ export default class JokerTypePlugin extends Plugin {
     this.fallbackOverlaySet.clear()
     if (this.comboResetTimer) clearTimeout(this.comboResetTimer)
     this.comboResetTimer = null
+    this.pasteTracker.dispose()
     this.audio.dispose()
   }
 
@@ -116,6 +118,7 @@ export default class JokerTypePlugin extends Plugin {
     return createTypingEffectExtension({
       getSettings: () => this.settings,
       audio: this.audio,
+      pasteTracker: this.pasteTracker,
       onEvents: (stats) => this.recordEvents(stats)
     })
   }
@@ -167,7 +170,13 @@ export default class JokerTypePlugin extends Plugin {
     if (previousLength === undefined) {
       const from = Math.max(0, offset - 1)
       const inserted = offset > 0 ? editor.getRange(editor.offsetToPos(from), editor.offsetToPos(offset)) : ''
-      return classifyTextChange({ from, to: offset, inserted, throttleLargeChanges: this.settings.throttleLargeChanges })
+      return classifyTextChange({
+        from,
+        to: offset,
+        inserted,
+        insertionReason: inserted && this.pasteTracker.consume() ? 'paste' : 'unknown',
+        throttleLargeChanges: this.settings.throttleLargeChanges
+      })
     }
 
     if (currentLength < previousLength) {
@@ -183,7 +192,13 @@ export default class JokerTypePlugin extends Plugin {
       const insertedLength = currentLength - previousLength
       const from = Math.max(0, offset - insertedLength)
       const inserted = editor.getRange(editor.offsetToPos(from), editor.offsetToPos(offset))
-      return classifyTextChange({ from, to: offset, inserted, throttleLargeChanges: this.settings.throttleLargeChanges })
+      return classifyTextChange({
+        from,
+        to: offset,
+        inserted,
+        insertionReason: inserted && this.pasteTracker.consume() ? 'paste' : 'unknown',
+        throttleLargeChanges: this.settings.throttleLargeChanges
+      })
     }
 
     return []
