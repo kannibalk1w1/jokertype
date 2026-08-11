@@ -91,6 +91,14 @@ export class AudioEngine {
     }
   }
 
+  async validateCustomSound(dataUrl: string): Promise<void> {
+    const ctx = this.ensureContext()
+    if (!ctx) throw new Error('Web Audio is unavailable in this Obsidian window.')
+
+    const buffer = await decodeOptionalDataUrlAudio(ctx, dataUrl)
+    if (!buffer) throw new Error('The selected file did not contain readable audio data.')
+  }
+
   dispose(): void {
     if (this.resetTimer) clearTimeout(this.resetTimer)
     this.resetTimer = null

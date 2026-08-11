@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting } from 'obsidian'
+import { App, Notice, PluginSettingTab, Setting } from 'obsidian'
 import type JokerTypePlugin from './main'
 import { applyPreset } from './settingsModel'
 import type { EffectIntensity, JokerTypePreset, SoundStyle, VisualTheme } from './settingsModel'
@@ -114,14 +114,7 @@ export class JokerTypeSettingTab extends PluginSettingTab {
         button
           .setButtonText('Upload')
           .onClick(() => {
-            this.pickSoundFile(async (dataUrl) => {
-              this.plugin.settings.customTypeSoundDataUrl = dataUrl
-              this.plugin.settings.soundStyle = 'custom'
-              this.plugin.settings.soundEnabled = true
-              await this.plugin.saveSettings()
-              this.plugin.refreshExtension()
-              this.display()
-            })
+            this.uploadCustomSound('customTypeSoundDataUrl', 'typing')
           })
       })
       .addButton((button) => {
@@ -145,14 +138,7 @@ export class JokerTypeSettingTab extends PluginSettingTab {
         button
           .setButtonText('Upload')
           .onClick(() => {
-            this.pickSoundFile(async (dataUrl) => {
-              this.plugin.settings.customEnterSoundDataUrl = dataUrl
-              this.plugin.settings.soundStyle = 'custom'
-              this.plugin.settings.soundEnabled = true
-              await this.plugin.saveSettings()
-              this.plugin.refreshExtension()
-              this.display()
-            })
+            this.uploadCustomSound('customEnterSoundDataUrl', 'Enter')
           })
       })
       .addButton((button) => {
@@ -392,14 +378,7 @@ export class JokerTypeSettingTab extends PluginSettingTab {
         button
           .setButtonText('Upload')
           .onClick(() => {
-            this.pickSoundFile(async (dataUrl) => {
-              this.plugin.settings[key] = dataUrl
-              this.plugin.settings.soundStyle = 'custom'
-              this.plugin.settings.soundEnabled = true
-              await this.plugin.saveSettings()
-              this.plugin.refreshExtension()
-              this.display()
-            })
+            this.uploadCustomSound(key, name.replace('Custom ', ''))
           })
       })
       .addButton((button) => {
@@ -415,20 +394,85 @@ export class JokerTypeSettingTab extends PluginSettingTab {
       })
   }
 
-  private pickSoundFile(onLoad: (dataUrl: string) => void | Promise<void>): void {
-    const input = document.createElement('input')
+  private uploadCustomSound(
+    key: 'customTypeSoundDataUrl' | 'customSpaceSoundDataUrl' | 'customEnterSoundDataUrl' | 'customDeleteSoundDataUrl' | 'customPasteSoundDataUrl',
+    label: string
+  ): void {
+    this.pickSoundFile(async (dataUrl, fileName) => {
+      const previousValue = this.plugin.settings[key]
+      const previousStyle = this.plugin.settings.soundStyle
+      const previousEnabled = this.plugin.settings.soundEnabled
+
+      try {
+        await this.plugin.validateCustomSound(dataUrl)
+        this.plugin.settings[key] = dataUrl
+        this.plugin.settings.soundStyle = 'custom'
+        this.plugin.settings.soundEnabled = true
+        await this.plugin.saveSettings()
+        this.plugin.refreshExtension()
+        this.display()
+        new Notice(`Loaded ${fileName} as the custom ${label} sound.`)
+      } catch (error) {
+        this.plugin.settings[key] = previousValue
+        this.plugin.settings.soundStyle = previousStyle
+        this.plugin.settings.soundEnabled = previousEnabled
+        new Notice(`Could not load ${fileName}: ${errorMessage(error)}`)
+      }
+    })
+  }
+
+  private pickSoundFile(onLoad: (dataUrl: string, fileName: string) => void | Promise<void>): void {
+    // Settings can be rendered in a separate Obsidian window. The file input
+    // must belong to that window or Chromium rejects the click because the
+    // transient user activation belongs to a different browsing context.
+    const doc = this.containerEl.ownerDocument
+    const input = doc.createElement('input')
     input.type = 'file'
-    input.accept = 'audio/*'
+    input.accept = 'audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac,.aiff,.aif,.webm'
+    input.style.display = 'none'
+
+    const cleanup = (): void => {
+      input.remove()
+    }
+
+    input.addEventListener('cancel', cleanup, { once: true })
     input.onchange = () => {
       const file = input.files?.[0]
-      if (!file) return
+      if (!file) {
+        cleanup()
+        return
+      }
 
-      const reader = new FileReader()
+      const Reader = doc.defaultView?.FileReader ?? FileReader
+      const reader = new Reader()
+      reader.onerror = () => {
+        cleanup()
+        new Notice(`Could not read ${file.name}: ${reader.error?.message ?? 'unknown file error'}`)
+      }
       reader.onload = () => {
-        if (typeof reader.result === 'string') void onLoad(reader.result)
+        cleanup()
+        if (typeof reader.result !== 'string') {
+          new Notice(`Could not read ${file.name} as audio data.`)
+          return
+        }
+
+        void Promise.resolve(onLoad(reader.result, file.name)).catch((error) => {
+          new Notice(`Could not load ${file.name}: ${errorMessage(error)}`)
+        })
       }
       reader.readAsDataURL(file)
     }
-    input.click()
+
+    ;(doc.body ?? doc.documentElement).appendChild(input)
+    try {
+      input.click()
+    } catch (error) {
+      cleanup()
+      new Notice(`Could not open the audio file picker: ${errorMessage(error)}`)
+    }
   }
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
 }
