@@ -44,9 +44,21 @@ describe('classifyTextChange', () => {
     ])
   })
 
-  it('marks large throttled insertions as paste', () => {
+  it('does not infer paste from the size of an insertion', () => {
     expect(classifyTextChange({ from: 1, to: 1, inserted: 'a long pasted string', throttleLargeChanges: true })).toEqual([
-      { type: 'chunk', text: 'a long pasted string', from: 1, length: 20, reason: 'paste' }
+      { type: 'chunk', text: 'a long pasted string', from: 1, length: 20, reason: 'unknown' }
+    ])
+  })
+
+  it('uses explicit clipboard metadata to classify paste', () => {
+    expect(classifyTextChange({ from: 1, to: 1, inserted: 'pasted', insertionReason: 'paste' })).toEqual([
+      { type: 'chunk', text: 'pasted', from: 1, length: 6, reason: 'paste' }
+    ])
+  })
+
+  it('classifies blockquote continuation as Enter', () => {
+    expect(classifyTextChange({ from: 8, to: 8, inserted: '\n> ' })).toEqual([
+      { type: 'enter', from: 8 }
     ])
   })
 })

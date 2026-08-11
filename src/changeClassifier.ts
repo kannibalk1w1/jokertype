@@ -5,19 +5,29 @@ export type TypingEffectEvent =
   | { type: 'delete'; from: number; to: number; direction: 'backward' | 'forward' | 'unknown' }
   | { type: 'chunk'; text: string; from: number; length: number; reason: 'paste' | 'composition' | 'autocomplete' | 'unknown' }
 
+export type InsertionReason = Extract<TypingEffectEvent, { type: 'chunk' }>['reason']
+
 export interface TextChangeInput {
   from: number
   to: number
   inserted: string
   deleteDirection?: 'backward' | 'forward' | 'unknown'
+  insertionReason?: InsertionReason
   throttleLargeChanges?: boolean
 }
 
 export function classifyTextChange(change: TextChangeInput): TypingEffectEvent[] {
-  const { from, to, inserted, deleteDirection = 'unknown', throttleLargeChanges = false } = change
+  const { from, to, inserted, deleteDirection = 'unknown', insertionReason = 'unknown' } = change
 
   if (inserted.length === 0 && to > from) {
     return [{ type: 'delete', from, to, direction: deleteDirection }]
+  }
+
+  // Paste is transaction metadata, not a guess based on how much text changed.
+  // Check it before the character cases so even a one-character clipboard paste
+  // keeps its actual origin.
+  if (inserted.length > 0 && insertionReason === 'paste') {
+    return [{ type: 'chunk', text: inserted, from, length: inserted.length, reason: 'paste' }]
   }
 
   if (inserted === '\n') {
@@ -33,10 +43,11 @@ export function classifyTextChange(change: TextChangeInput): TypingEffectEvent[]
   }
 
   if (inserted.length > 0) {
-    if (throttleLargeChanges && [...inserted].length > 12) {
-      return [{ type: 'chunk', text: inserted, from, length: inserted.length, reason: 'paste' }]
-    }
-    return [{ type: 'chunk', text: inserted, from, length: inserted.length, reason: 'unknown' }]
+    // Markdown continuation inserts the newline and syntax such as `> ` or
+    // `- ` together. It is still the result of pressing Enter.
+    if (inserted.startsWith('\n')) return [{ type: 'enter', from }]
+
+    return [{ type: 'chunk', text: inserted, from, length: inserted.length, reason: insertionReason }]
   }
 
   return []

@@ -157,7 +157,11 @@ export class AudioEngine {
 
     if (event.type === 'enter') return this.customEnterBuffer ?? this.customTypeBuffer
     if (event.type === 'delete') return this.customDeleteBuffer
-    if (event.type === 'chunk') return this.customPasteBuffer ?? this.customTypeBuffer
+    if (event.type === 'chunk') {
+      return event.reason === 'paste'
+        ? this.customPasteBuffer ?? this.customTypeBuffer
+        : this.customTypeBuffer
+    }
     if (event.type === 'char' && event.text === ' ') return this.customSpaceBuffer ?? this.customTypeBuffer
     return this.customTypeBuffer
   }

@@ -1,6 +1,6 @@
 import { ViewPlugin, type ViewUpdate, type EditorView } from '@codemirror/view'
 import type { Extension } from '@codemirror/state'
-import { classifyTextChange, type TypingEffectEvent } from './changeClassifier'
+import { classifyTextChange, type InsertionReason, type TypingEffectEvent } from './changeClassifier'
 import { AudioEngine } from './audioEngine'
 import { EffectOverlay } from './effectOverlay'
 import type { JokerTypeSettings } from './settings'
@@ -8,11 +8,46 @@ import type { JokerTypeSettings } from './settings'
 export interface TypingEffectExtensionOptions {
   getSettings: () => JokerTypeSettings
   audio: AudioEngine
+  pasteTracker: PasteTracker
   onEvents?: (stats: { events: number; spawned: number; missedCoords: number; audio: number }) => void
 }
 
+export class PasteTracker {
+  private pending = false
+  private resetTimer: ReturnType<typeof setTimeout> | null = null
+
+  observe(): void {
+    this.pending = true
+    if (this.resetTimer !== null) clearTimeout(this.resetTimer)
+    this.resetTimer = setTimeout(() => {
+      this.pending = false
+      this.resetTimer = null
+    }, 1000)
+  }
+
+  consume(): boolean {
+    if (!this.pending) return false
+    this.pending = false
+    if (this.resetTimer !== null) clearTimeout(this.resetTimer)
+    this.resetTimer = null
+    return true
+  }
+
+  dispose(): void {
+    if (this.resetTimer !== null) clearTimeout(this.resetTimer)
+    this.resetTimer = null
+    this.pending = false
+  }
+}
+
 export function createTypingEffectExtension(options: TypingEffectExtensionOptions): Extension {
-  return ViewPlugin.define((view) => new TypingEffectPlugin(view, options))
+  return ViewPlugin.define((view) => new TypingEffectPlugin(view, options), {
+    eventObservers: {
+      paste(this: TypingEffectPlugin): void {
+        this.observePaste()
+      }
+    }
+  })
 }
 
 class TypingEffectPlugin {
@@ -28,7 +63,7 @@ class TypingEffectPlugin {
     const settings = this.options.getSettings()
     if (!settings.enabled) return
 
-    const events = eventsFromUpdate(update, settings)
+    const events = eventsFromUpdate(update, settings, this.options.pasteTracker.consume())
     let spawned = 0
     let missedCoords = 0
     let audio = 0
@@ -45,9 +80,17 @@ class TypingEffectPlugin {
   destroy(): void {
     this.overlay.destroy()
   }
+
+  observePaste(): void {
+    this.options.pasteTracker.observe()
+  }
 }
 
-export function eventsFromUpdate(update: ViewUpdate, settings: Pick<JokerTypeSettings, 'throttleLargeChanges'> = { throttleLargeChanges: false }): TypingEffectEvent[] {
+export function eventsFromUpdate(
+  update: ViewUpdate,
+  settings: Pick<JokerTypeSettings, 'throttleLargeChanges'> = { throttleLargeChanges: false },
+  pasteObserved = false
+): TypingEffectEvent[] {
   const events: TypingEffectEvent[] = []
 
   for (const transaction of update.transactions) {
@@ -67,10 +110,19 @@ export function eventsFromUpdate(update: ViewUpdate, settings: Pick<JokerTypeSet
         to,
         inserted: insertedText,
         deleteDirection,
+        insertionReason: insertionReasonFor(transaction, pasteObserved),
         throttleLargeChanges: settings.throttleLargeChanges
       }))
     })
   }
 
   return events
+}
+
+function insertionReasonFor(transaction: ViewUpdate['transactions'][number], pasteObserved: boolean): InsertionReason {
+  if (pasteObserved) return 'paste'
+  if (transaction.isUserEvent('input.paste')) return 'paste'
+  if (transaction.isUserEvent('input.type.compose')) return 'composition'
+  if (transaction.isUserEvent('input.complete')) return 'autocomplete'
+  return 'unknown'
 }
