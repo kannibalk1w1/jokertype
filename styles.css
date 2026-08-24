@@ -6,6 +6,10 @@
   font-display: block;
 }
 
+.jokertype-file-input {
+  display: none;
+}
+
 .jokertype-overlay {
   position: absolute;
   inset: 0;

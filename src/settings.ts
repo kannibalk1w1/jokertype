@@ -20,10 +20,6 @@ export class JokerTypeSettingTab extends PluginSettingTab {
     containerEl.empty()
 
     new Setting(containerEl)
-      .setName('General')
-      .setHeading()
-
-    new Setting(containerEl)
       .setName('Enabled')
       .setDesc('Turn all JokerType effects and sounds on or off.')
       .addToggle((toggle) => {
@@ -461,7 +457,7 @@ export class JokerTypeSettingTab extends PluginSettingTab {
 
   private pickSoundFile(onLoad: (dataUrl: string) => void | Promise<void>): void {
     const input = this.containerEl.createEl('input', { attr: { type: 'file', accept: 'audio/*' } })
-    input.style.display = 'none'
+    input.addClass('jokertype-file-input')
     input.onchange = () => {
       const file = input.files?.[0]
       input.remove()

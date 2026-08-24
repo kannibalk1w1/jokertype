@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.2
+
+- Removed settings markup that Obsidian's plugin reviewer disallows and moved the file-picker styling into `styles.css`.
+
 ## 1.3.1
 
 - Moved the embedded pixel font declaration into `styles.css`, which Obsidian loads safely for every plugin window.
