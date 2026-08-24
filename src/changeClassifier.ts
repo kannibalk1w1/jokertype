@@ -1,9 +1,16 @@
+import type { MarkdownMoment, MarkdownMomentEvent } from './markdownMomentClassifier'
+
 export type TypingEffectEvent =
   | { type: 'char'; text: string; from: number; to: number }
   | { type: 'enter'; from: number }
   | { type: 'tab'; from: number }
   | { type: 'delete'; from: number; to: number; direction: 'backward' | 'forward' | 'unknown' }
   | { type: 'chunk'; text: string; from: number; length: number; reason: 'paste' | 'composition' | 'autocomplete' | 'unknown' }
+  | { type: 'moment'; moment: MarkdownMoment; from: number; to: number }
+
+export function momentEffectEvent(event: MarkdownMomentEvent): TypingEffectEvent {
+  return event
+}
 
 export interface TextChangeInput {
   from: number

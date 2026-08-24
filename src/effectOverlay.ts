@@ -23,7 +23,7 @@ export class EffectOverlay {
     const coords = this.coordsFor(event)
     if (!coords) return false
 
-    if (settings.editorShake && !settings.reducedMotion && (event.type === 'enter' || event.type === 'chunk' || event.type === 'delete')) {
+    if (settings.editorShake && !settings.reducedMotion && (event.type === 'enter' || event.type === 'chunk' || event.type === 'delete' || event.type === 'moment')) {
       this.shake()
     }
 
@@ -132,10 +132,12 @@ function tokenFor(event: TypingEffectEvent): string {
   if (event.type === 'enter') return 'ENTER'
   if (event.type === 'tab') return 'TAB'
   if (event.type === 'delete') return event.direction === 'forward' ? 'DELETE' : 'BACKSPACE'
+  if (event.type === 'moment') return momentTokenFor(event.moment)
   return 'PASTE'
 }
 
 function shouldSpawnEvent(event: TypingEffectEvent, settings: JokerTypeSettings): boolean {
+  if (event.type === 'moment') return settings.markdownMomentEnabled[event.moment]
   if (!settings.textGlyphsEnabled) return false
   if (event.type === 'enter') return settings.enterEffectsEnabled
   if (event.type === 'delete') return settings.deleteEffectsEnabled
@@ -143,12 +145,14 @@ function shouldSpawnEvent(event: TypingEffectEvent, settings: JokerTypeSettings)
 }
 
 function tokenKind(token: string): string {
+  if (['TITLE!', 'LINKED', 'EMBEDDED', 'QUEST', 'CLEARED', 'SUMMONED', 'LOCKED IN', 'CITED', 'DEALT', 'GRID!'].includes(token)) return 'moment'
   if (token === 'SPACE' || token === 'ENTER' || token === 'TAB' || token === 'BACKSPACE' || token === 'DELETE') return 'special'
   if (token.startsWith('SHIFT+')) return 'shift'
   return 'letter'
 }
 
-function colorFor(event: TypingEffectEvent, token: string, theme: VisualTheme): string {
+export function colorFor(event: TypingEffectEvent, token: string, theme: VisualTheme): string {
+  if (event.type === 'moment') return momentColorFor(event.moment, theme)
   if (theme === 'monochrome') {
     if (event.type === 'delete') return '#f2f2f2'
     if (event.type === 'chunk') return '#d7d7d7'
@@ -160,6 +164,14 @@ function colorFor(event: TypingEffectEvent, token: string, theme: VisualTheme): 
     if (event.type === 'enter') return '#7cff9b'
     if (event.type === 'chunk') return '#b6ff7c'
     return '#46ff74'
+  }
+
+  if (theme === 'prism') {
+    if (event.type === 'delete') return '#ff5d8f'
+    if (event.type === 'enter') return '#65e7ff'
+    if (event.type === 'tab') return '#a98bff'
+    if (event.type === 'chunk') return '#8dff9b'
+    return prismColorFor(token)
   }
 
   if (theme === 'neon') {
@@ -187,6 +199,7 @@ function colorFor(event: TypingEffectEvent, token: string, theme: VisualTheme): 
 
 function fontSizeFor(event: TypingEffectEvent, settings: JokerTypeSettings): string {
   const base = settings.effectIntensity === 'low' ? 20 : settings.effectIntensity === 'high' ? 34 : 26
+  if (event.type === 'moment') return `${base + 10}px`
   if (event.type === 'enter') return `${base + 8}px`
   if (event.type === 'tab' || event.type === 'delete' || event.type === 'chunk') return `${base + 4}px`
   return `${base}px`
@@ -196,13 +209,14 @@ function animationFor(event: TypingEffectEvent, settings: JokerTypeSettings): st
   if (settings.reducedMotion) return 'jokertype-pulse 520ms ease-out forwards'
   const duration = settings.glyphLifetimeMs
   if (event.type === 'enter') return `jokertype-pop-big ${duration}ms cubic-bezier(.15,.9,.25,1) forwards`
+  if (event.type === 'moment') return `jokertype-card ${duration}ms cubic-bezier(.15,.9,.25,1) forwards`
   if (event.type === 'chunk') return `jokertype-pop-big ${duration}ms cubic-bezier(.15,.9,.25,1) forwards`
   if (event.type === 'delete') return `jokertype-slice ${Math.max(520, duration * 0.8)}ms ease-out forwards`
   return `jokertype-float ${duration}ms cubic-bezier(.15,.9,.25,1) forwards`
 }
 
 function driftXFor(token: string, event: TypingEffectEvent): string {
-  if (event.type === 'enter' || event.type === 'tab') return '0px'
+  if (event.type === 'enter' || event.type === 'tab' || event.type === 'moment') return '0px'
   if (event.type === 'delete') return '18px'
   if (token === 'PASTE') return '0px'
   if (token === 'SPACE') return '-8px'
@@ -210,6 +224,7 @@ function driftXFor(token: string, event: TypingEffectEvent): string {
 }
 
 function driftYFor(event: TypingEffectEvent): string {
+  if (event.type === 'moment') return '-68px'
   if (event.type === 'enter' || event.type === 'chunk') return '-78px'
   if (event.type === 'tab') return '-54px'
   if (event.type === 'delete') return '-32px'
@@ -223,7 +238,7 @@ function shadowFor(event: TypingEffectEvent, token: string, theme: VisualTheme):
 }
 
 function shouldShowCorners(event: TypingEffectEvent, token: string): boolean {
-  if (event.type === 'enter' || event.type === 'tab' || event.type === 'delete' || event.type === 'chunk') return false
+  if (event.type === 'enter' || event.type === 'tab' || event.type === 'delete' || event.type === 'chunk' || event.type === 'moment') return false
   return token.length > 0
 }
 
@@ -231,5 +246,65 @@ function cornerColorFor(token: string, theme: VisualTheme): string {
   if (theme === 'monochrome') return '#ffffff'
   if (theme === 'terminal') return '#46ff74'
   if (theme === 'neon') return tokenKind(token) === 'letter' ? '#00f5ff' : '#ff3bff'
+  if (theme === 'prism') return prismColorFor(token)
   return tokenKind(token) === 'letter' ? '#00ffff' : '#ff00ff'
+}
+
+function prismColorFor(token: string): string {
+  const colors = ['#ff6b9e', '#ffad5c', '#f9e65c', '#8dff9b', '#65e7ff', '#a98bff']
+  let value = 0
+  for (let index = 0; index < token.length; index += 1) value = (value * 31 + token.charCodeAt(index)) >>> 0
+  return colors[value % colors.length]
+}
+
+function momentTokenFor(moment: Extract<TypingEffectEvent, { type: 'moment' }>['moment']): string {
+  if (moment === 'title') return 'TITLE!'
+  if (moment === 'linked') return 'LINKED'
+  if (moment === 'embedded') return 'EMBEDDED'
+  if (moment === 'quest') return 'QUEST'
+  if (moment === 'cleared') return 'CLEARED'
+  if (moment === 'summoned') return 'SUMMONED'
+  if (moment === 'locked-in') return 'LOCKED IN'
+  if (moment === 'cited') return 'CITED'
+  if (moment === 'dealt') return 'DEALT'
+  return 'GRID!'
+}
+
+function momentColorFor(moment: Extract<TypingEffectEvent, { type: 'moment' }>['moment'], theme: VisualTheme): string {
+  if (theme === 'monochrome') return '#ffffff'
+  if (theme === 'terminal') return moment === 'cleared' ? '#7cff9b' : '#b6ff7c'
+  if (theme === 'neon') {
+    if (moment === 'title') return '#ffe95c'
+    if (moment === 'linked') return '#00f5ff'
+    if (moment === 'embedded') return '#ff3bff'
+    if (moment === 'quest') return '#b56cff'
+    if (moment === 'cleared') return '#39ff14'
+    if (moment === 'summoned') return '#ff3b8d'
+    if (moment === 'locked-in') return '#ff9f43'
+    if (moment === 'cited') return '#b56cff'
+    if (moment === 'dealt') return '#ffe95c'
+    return '#00f5ff'
+  }
+  if (theme === 'prism') {
+    if (moment === 'title') return '#ffad5c'
+    if (moment === 'linked') return '#65e7ff'
+    if (moment === 'embedded') return '#ff6b9e'
+    if (moment === 'quest') return '#a98bff'
+    if (moment === 'cleared') return '#8dff9b'
+    if (moment === 'summoned') return '#ff6b9e'
+    if (moment === 'locked-in') return '#ffad5c'
+    if (moment === 'cited') return '#a98bff'
+    if (moment === 'dealt') return '#f9e65c'
+    return '#65e7ff'
+  }
+  if (moment === 'title') return '#ffdf6e'
+  if (moment === 'linked') return '#79f2ff'
+  if (moment === 'embedded') return '#ff7bf7'
+  if (moment === 'quest') return '#c79cff'
+  if (moment === 'cleared') return '#9cff7a'
+  if (moment === 'summoned') return '#ff7bf7'
+  if (moment === 'locked-in') return '#ffb56b'
+  if (moment === 'cited') return '#c79cff'
+  if (moment === 'dealt') return '#ffdf6e'
+  return '#79f2ff'
 }

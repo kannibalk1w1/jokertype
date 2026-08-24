@@ -1,26 +1,24 @@
 import { Editor, MarkdownView, Notice, Plugin } from 'obsidian'
-import { Compartment, type Extension } from '@codemirror/state'
-import type { EditorView } from '@codemirror/view'
+import { EditorView } from '@codemirror/view'
 import { AudioEngine } from './audioEngine'
 import { EffectOverlay } from './effectOverlay'
-import { createTypingEffectExtension } from './typingEffectExtension'
-import { classifyTextChange } from './changeClassifier'
+import { classifyTextChange, momentEffectEvent } from './changeClassifier'
 import type { TypingEffectEvent } from './changeClassifier'
+import { detectMarkdownMoment } from './markdownMomentClassifier'
 import { DEFAULT_SETTINGS, JokerTypeSettingTab, type JokerTypeSettings } from './settings'
+import { applyMarkdownMomentDeck, MARKDOWN_MOMENTS } from './settingsModel'
 
 export default class JokerTypePlugin extends Plugin {
   settings: JokerTypeSettings = { ...DEFAULT_SETTINGS }
-  private extensionCompartment = new Compartment()
   private audio = new AudioEngine()
   private statusEl: HTMLElement | null = null
   private eventCount = 0
   private spawnCount = 0
   private missedCoordCount = 0
   private audioCount = 0
-  private lastCmEventAt = 0
   private fallbackOverlays = new WeakMap<EditorView, EffectOverlay>()
   private fallbackOverlaySet = new Set<EffectOverlay>()
-  private fallbackEditorLengths = new WeakMap<Editor, number>()
+  private fallbackEditorContents = new WeakMap<Editor, string>()
   private comboCount = 0
   private comboResetTimer: number | null = null
 
@@ -35,7 +33,11 @@ export default class JokerTypePlugin extends Plugin {
         void this.toggleEnabled()
       }
     })
-    this.registerEditorExtension(this.extensionCompartment.of(this.createExtension()))
+    this.addCommand({
+      id: 'show-diagnostics',
+      name: 'Show effect diagnostics',
+      callback: () => this.showDiagnostics()
+    })
     this.registerEvent(this.app.workspace.on('editor-change', (editor) => this.handleEditorChange(editor)))
     this.app.workspace.updateOptions()
   }
@@ -49,8 +51,11 @@ export default class JokerTypePlugin extends Plugin {
   }
 
   async loadSettings(): Promise<void> {
-    const saved = await this.loadData()
+    const saved = await this.loadData() as (Partial<JokerTypeSettings> & { markdownMoments?: 'off' | 'essentials' }) | null
     this.settings = Object.assign({}, DEFAULT_SETTINGS, saved)
+    if (saved && !('markdownMomentDeck' in saved) && saved.markdownMoments === 'essentials') {
+      this.settings = applyMarkdownMomentDeck(this.settings, 'essentials')
+    }
     if (this.shouldDefaultToReducedMotion(saved)) {
       this.settings.reducedMotion = true
       this.settings.editorShake = false
@@ -95,10 +100,14 @@ export default class JokerTypePlugin extends Plugin {
     }
 
     const offset = editor.posToOffset(editor.getCursor())
+    const momentEvents: TypingEffectEvent[] = MARKDOWN_MOMENTS
+      .filter((moment) => this.settings.markdownMomentEnabled[moment])
+      .map((moment) => ({ type: 'moment', moment, from: offset, to: offset }))
     const events: TypingEffectEvent[] = [
       { type: 'char', text: 'J', from: offset, to: offset + 1 },
       { type: 'char', text: ' ', from: offset, to: offset + 1 },
       { type: 'enter', from: offset },
+      ...momentEvents,
       { type: 'chunk', text: 'preview', from: offset, length: 7, reason: 'unknown' }
     ]
     const overlay = this.fallbackOverlayFor(view)
@@ -112,39 +121,20 @@ export default class JokerTypePlugin extends Plugin {
     })
   }
 
-  private createExtension(): Extension {
-    return createTypingEffectExtension({
-      getSettings: () => this.settings,
-      audio: this.audio,
-      onEvents: (stats) => this.recordEvents(stats)
-    })
-  }
-
-  private recordEvents(stats: { events: number; spawned: number; missedCoords: number; audio: number }): void {
-    this.lastCmEventAt = Date.now()
-    this.eventCount += stats.events
-    this.spawnCount += stats.spawned
-    this.missedCoordCount += stats.missedCoords
-    this.audioCount += stats.audio
-    this.registerCombo(stats.events)
-    this.updateStatus()
-  }
-
   private handleEditorChange(editor: Editor): void {
     window.setTimeout(() => {
       if (!this.settings.enabled) return
-      if (Date.now() - this.lastCmEventAt < 50) return
 
       const view = this.editorViewFrom(editor)
       if (!view) return
 
       const cursor = editor.getCursor()
       const offset = editor.posToOffset(cursor)
-      const currentLength = editor.getValue().length
-      const previousLength = this.fallbackEditorLengths.get(editor)
-      this.fallbackEditorLengths.set(editor, currentLength)
+      const currentContent = editor.getValue()
+      const previousContent = this.fallbackEditorContents.get(editor)
+      this.fallbackEditorContents.set(editor, currentContent)
 
-      const events = this.fallbackEventsFor(editor, offset, previousLength, currentLength)
+      const events = this.fallbackEventsFor(editor, offset, previousContent, currentContent)
       if (events.length === 0) return
 
       const overlay = this.fallbackOverlayFor(view)
@@ -160,15 +150,18 @@ export default class JokerTypePlugin extends Plugin {
       this.audioCount += audio
       this.registerCombo(events.length)
       this.updateStatus()
-    }, 0)
+    }, 32)
   }
 
-  private fallbackEventsFor(editor: Editor, offset: number, previousLength: number | undefined, currentLength: number): TypingEffectEvent[] {
-    if (previousLength === undefined) {
+  private fallbackEventsFor(editor: Editor, offset: number, previousContent: string | undefined, currentContent: string): TypingEffectEvent[] {
+    if (previousContent === undefined) {
       const from = Math.max(0, offset - 1)
       const inserted = offset > 0 ? editor.getRange(editor.offsetToPos(from), editor.offsetToPos(offset)) : ''
       return classifyTextChange({ from, to: offset, inserted, throttleLargeChanges: this.settings.throttleLargeChanges })
     }
+
+    const previousLength = previousContent.length
+    const currentLength = currentContent.length
 
     if (currentLength < previousLength) {
       return [{
@@ -183,7 +176,37 @@ export default class JokerTypePlugin extends Plugin {
       const insertedLength = currentLength - previousLength
       const from = Math.max(0, offset - insertedLength)
       const inserted = editor.getRange(editor.offsetToPos(from), editor.offsetToPos(offset))
-      return classifyTextChange({ from, to: offset, inserted, throttleLargeChanges: this.settings.throttleLargeChanges })
+      const events = classifyTextChange({ from, to: offset, inserted, throttleLargeChanges: this.settings.throttleLargeChanges })
+      if (Object.values(this.settings.markdownMomentEnabled).some(Boolean)) {
+        const moment = detectMarkdownMoment({
+          before: previousContent,
+          after: currentContent,
+          change: { fromA: from, toA: from, fromB: from, toB: offset, inserted },
+          throttleLargeChanges: this.settings.throttleLargeChanges
+        })
+        if (moment && this.settings.markdownMomentEnabled[moment.moment]) events.push(momentEffectEvent(moment))
+      }
+      return events
+    }
+
+    if (currentContent !== previousContent) {
+      const change = replacementChange(previousContent, currentContent)
+      const events = classifyTextChange({
+        from: change.fromA,
+        to: change.toA,
+        inserted: change.inserted,
+        throttleLargeChanges: this.settings.throttleLargeChanges
+      })
+      if (Object.values(this.settings.markdownMomentEnabled).some(Boolean)) {
+        const moment = detectMarkdownMoment({
+          before: previousContent,
+          after: currentContent,
+          change,
+          throttleLargeChanges: this.settings.throttleLargeChanges
+        })
+        if (moment && this.settings.markdownMomentEnabled[moment.moment]) events.push(momentEffectEvent(moment))
+      }
+      return events
     }
 
     return []
@@ -191,7 +214,12 @@ export default class JokerTypePlugin extends Plugin {
 
   private editorViewFrom(editor: Editor): EditorView | null {
     const maybeEditor = editor as unknown as { cm?: EditorView }
-    return maybeEditor.cm ?? null
+    if (maybeEditor.cm) return maybeEditor.cm
+
+    const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView)
+    if (!markdownView || markdownView.editor !== editor) return null
+    const editorEl = markdownView.containerEl.querySelector<HTMLElement>('.cm-editor')
+    return editorEl ? EditorView.findFromDOM(editorEl) : null
   }
 
   private fallbackOverlayFor(view: EditorView): EffectOverlay {
@@ -226,6 +254,10 @@ export default class JokerTypePlugin extends Plugin {
     this.comboCount = 0
   }
 
+  private showDiagnostics(): void {
+    new Notice(`JokerType: ${this.eventCount} events, ${this.spawnCount} rendered, ${this.missedCoordCount} without coordinates, ${this.audioCount} sounds.`)
+  }
+
   private registerCombo(events: number): void {
     if (!this.settings.statusComboEnabled || events <= 0) return
     this.comboCount += events
@@ -242,4 +274,22 @@ export default class JokerTypePlugin extends Plugin {
     const isMobile = 'isMobile' in this.app ? Boolean(this.app.isMobile) : false
     return prefersReducedMotion || isMobile
   }
+}
+
+function replacementChange(before: string, after: string): { fromA: number; toA: number; fromB: number; toB: number; inserted: string } {
+  let prefixLength = 0
+  const commonLength = Math.min(before.length, after.length)
+  while (prefixLength < commonLength && before[prefixLength] === after[prefixLength]) prefixLength += 1
+
+  let suffixLength = 0
+  const remainingBefore = before.length - prefixLength
+  const remainingAfter = after.length - prefixLength
+  while (suffixLength < remainingBefore && suffixLength < remainingAfter
+    && before[before.length - 1 - suffixLength] === after[after.length - 1 - suffixLength]) {
+    suffixLength += 1
+  }
+
+  const toA = before.length - suffixLength
+  const toB = after.length - suffixLength
+  return { fromA: prefixLength, toA, fromB: prefixLength, toB, inserted: after.slice(prefixLength, toB) }
 }

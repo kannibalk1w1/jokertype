@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyPreset, DEFAULT_SETTINGS } from './settingsModel'
+import { applyMarkdownMomentDeck, applyPreset, DEFAULT_SETTINGS, deckForMarkdownMoments } from './settingsModel'
 
 describe('applyPreset', () => {
   it('applies a preset while preserving the selected preset name', () => {
@@ -31,5 +31,30 @@ describe('applyPreset', () => {
     expect(settings.textGlyphsEnabled).toBe(false)
     expect(settings.enterEffectsEnabled).toBe(false)
     expect(settings.deleteEffectsEnabled).toBe(false)
+  })
+
+  it('applies the Prism preset for a colorful but calm typing streak', () => {
+    const settings = applyPreset(DEFAULT_SETTINGS, 'prism')
+
+    expect(settings.preset).toBe('prism')
+    expect(settings.visualTheme).toBe('prism')
+    expect(settings.cornerBracketsEnabled).toBe(true)
+    expect(settings.editorShake).toBe(false)
+    expect(settings.statusComboEnabled).toBe(true)
+  })
+
+  it('keeps Markdown Moments opt-in for a fresh install', () => {
+    expect(DEFAULT_SETTINGS.markdownMomentDeck).toBe('off')
+    expect(DEFAULT_SETTINGS.markdownMomentEnabled.title).toBe(false)
+  })
+
+  it('applies an Essentials deck and recognizes a custom selection', () => {
+    const essentials = applyMarkdownMomentDeck(DEFAULT_SETTINGS, 'essentials')
+    expect(essentials.markdownMomentEnabled.title).toBe(true)
+    expect(essentials.markdownMomentEnabled.embedded).toBe(false)
+
+    const custom = { ...essentials.markdownMomentEnabled, embedded: true }
+    expect(deckForMarkdownMoments(custom)).toBe('custom')
+    expect(deckForMarkdownMoments(applyMarkdownMomentDeck(DEFAULT_SETTINGS, 'full-deck').markdownMomentEnabled)).toBe('full-deck')
   })
 })

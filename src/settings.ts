@@ -1,10 +1,11 @@
 import { App, PluginSettingTab, Setting } from 'obsidian'
 import type JokerTypePlugin from './main'
-import { applyPreset } from './settingsModel'
-import type { EffectIntensity, JokerTypePreset, SoundStyle, VisualTheme } from './settingsModel'
+import { applyMarkdownMomentDeck, applyPreset, deckForMarkdownMoments, MARKDOWN_MOMENTS, MARKDOWN_MOMENT_LABELS } from './settingsModel'
+import type { EffectIntensity, JokerTypePreset, MarkdownMomentDeck, SoundStyle, VisualTheme } from './settingsModel'
+import type { MarkdownMoment } from './markdownMomentClassifier'
 
 export { applyPreset, DEFAULT_SETTINGS } from './settingsModel'
-export type { EffectIntensity, JokerTypePreset, JokerTypeSettings, SoundStyle, VisualTheme } from './settingsModel'
+export type { EffectIntensity, JokerTypePreset, JokerTypeSettings, MarkdownMomentDeck, SoundStyle, VisualTheme } from './settingsModel'
 
 export class JokerTypeSettingTab extends PluginSettingTab {
   plugin: JokerTypePlugin
@@ -55,6 +56,7 @@ export class JokerTypeSettingTab extends PluginSettingTab {
           .addOption('classic', 'Classic')
           .addOption('chaotic', 'Chaotic')
           .addOption('sound-only', 'Sound only')
+          .addOption('prism', 'Prism')
           .setValue(this.plugin.settings.preset)
           .onChange(async (value) => {
             this.plugin.settings = applyPreset(this.plugin.settings, value as JokerTypePreset)
@@ -66,7 +68,7 @@ export class JokerTypeSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Test effect')
-      .setDesc('Play a short JokerType preview in the active editor.')
+      .setDesc('Play a short preview in the active editor, including every enabled Markdown Moment.')
       .addButton((button) => {
         button
           .setButtonText('Test')
@@ -240,6 +242,7 @@ export class JokerTypeSettingTab extends PluginSettingTab {
           .addOption('neon', 'Neon')
           .addOption('monochrome', 'Monochrome')
           .addOption('terminal', 'Terminal')
+          .addOption('prism', 'Prism')
           .setValue(this.plugin.settings.visualTheme)
           .onChange(async (value) => {
             this.plugin.settings.visualTheme = value as VisualTheme
@@ -358,6 +361,31 @@ export class JokerTypeSettingTab extends PluginSettingTab {
       })
 
     new Setting(containerEl)
+      .setName('Markdown Moments')
+      .setHeading()
+
+    new Setting(containerEl)
+      .setName('Moment deck')
+      .setDesc('Choose a starting deck, then fine-tune every Moment below. Pasted text stays quiet.')
+      .addDropdown((dropdown) => {
+        dropdown
+          .addOption('off', 'Off')
+          .addOption('essentials', 'Essentials')
+          .addOption('full-deck', 'Full Deck')
+          .addOption('custom', 'Custom')
+          .setValue(this.plugin.settings.markdownMomentDeck)
+          .onChange(async (value) => {
+            if (value === 'custom') return
+            this.plugin.settings = applyMarkdownMomentDeck(this.plugin.settings, value as Exclude<MarkdownMomentDeck, 'custom'>)
+            await this.plugin.saveSettings()
+            this.plugin.refreshExtension()
+            this.display()
+          })
+      })
+
+    for (const moment of MARKDOWN_MOMENTS) this.addMarkdownMomentSetting(moment)
+
+    new Setting(containerEl)
       .setName('Reduced motion')
       .setDesc('Replace movement-heavy effects with subtle pulses.')
       .addToggle((toggle) => {
@@ -408,6 +436,22 @@ export class JokerTypeSettingTab extends PluginSettingTab {
           .setDisabled(!this.plugin.settings[key])
           .onClick(async () => {
             this.plugin.settings[key] = null
+            await this.plugin.saveSettings()
+            this.plugin.refreshExtension()
+            this.display()
+          })
+      })
+  }
+
+  private addMarkdownMomentSetting(moment: MarkdownMoment): void {
+    new Setting(this.containerEl)
+      .setName(MARKDOWN_MOMENT_LABELS[moment])
+      .addToggle((toggle) => {
+        toggle
+          .setValue(this.plugin.settings.markdownMomentEnabled[moment])
+          .onChange(async (value) => {
+            this.plugin.settings.markdownMomentEnabled = { ...this.plugin.settings.markdownMomentEnabled, [moment]: value }
+            this.plugin.settings.markdownMomentDeck = deckForMarkdownMoments(this.plugin.settings.markdownMomentEnabled)
             await this.plugin.saveSettings()
             this.plugin.refreshExtension()
             this.display()

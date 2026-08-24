@@ -51,6 +51,15 @@
   font-size: 30px;
 }
 
+.jokertype-moment {
+  padding: 5px 8px 4px;
+  border: 2px solid currentColor;
+  border-radius: 2px;
+  background: rgba(17, 17, 17, 0.72);
+  box-shadow: var(--jokertype-shadow), inset 0 0 0 2px rgba(17, 17, 17, 0.72);
+  letter-spacing: 2px;
+}
+
 .jokertype-intensity-low {
   font-size: 20px;
 }
@@ -125,6 +134,25 @@
   100% {
     opacity: 0;
     transform: translate(calc(-50% + var(--jokertype-drift-x)), calc(-100% + var(--jokertype-drift-y))) scale(1.1) rotate(0deg);
+  }
+}
+
+@keyframes jokertype-card {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -100%) scale(0.55) rotate(-4deg);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -118%) scale(1.16) rotate(1deg);
+  }
+  40% {
+    opacity: 1;
+    transform: translate(-50%, -118%) scale(1.05) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--jokertype-drift-x)), calc(-100% + var(--jokertype-drift-y))) scale(1) rotate(0deg);
   }
 }
 

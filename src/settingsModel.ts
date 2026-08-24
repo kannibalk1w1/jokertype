@@ -1,7 +1,25 @@
+import type { MarkdownMoment } from './markdownMomentClassifier'
+
 export type EffectIntensity = 'low' | 'medium' | 'high'
-export type JokerTypePreset = 'subtle' | 'classic' | 'chaotic' | 'sound-only'
+export type JokerTypePreset = 'subtle' | 'classic' | 'chaotic' | 'sound-only' | 'prism'
 export type SoundStyle = 'sampled' | 'procedural' | 'custom' | 'muted'
-export type VisualTheme = 'arcade' | 'neon' | 'monochrome' | 'terminal'
+export type VisualTheme = 'arcade' | 'neon' | 'monochrome' | 'terminal' | 'prism'
+export type MarkdownMomentDeck = 'off' | 'essentials' | 'full-deck' | 'custom'
+
+export const MARKDOWN_MOMENTS: MarkdownMoment[] = ['title', 'linked', 'embedded', 'quest', 'cleared', 'summoned', 'locked-in', 'cited', 'dealt', 'grid']
+export const ESSENTIAL_MARKDOWN_MOMENTS: MarkdownMoment[] = ['title', 'linked', 'quest', 'cleared']
+export const MARKDOWN_MOMENT_LABELS: Record<MarkdownMoment, string> = {
+  title: 'TITLE! — completed headings',
+  linked: 'LINKED — wiki links',
+  embedded: 'EMBEDDED — note embeds',
+  quest: 'QUEST — new tasks',
+  cleared: 'CLEARED — checked tasks',
+  summoned: 'SUMMONED — callouts',
+  'locked-in': 'LOCKED IN — closed code blocks',
+  cited: 'CITED — footnotes',
+  dealt: 'DEALT — closed frontmatter',
+  grid: 'GRID! — table divider rows'
+}
 
 export interface JokerTypeSettings {
   enabled: boolean
@@ -27,6 +45,8 @@ export interface JokerTypeSettings {
   editorShake: boolean
   statusComboEnabled: boolean
   throttleLargeChanges: boolean
+  markdownMomentDeck: MarkdownMomentDeck
+  markdownMomentEnabled: Record<MarkdownMoment, boolean>
   preset: JokerTypePreset
 }
 
@@ -54,6 +74,8 @@ export const DEFAULT_SETTINGS: JokerTypeSettings = {
   editorShake: false,
   statusComboEnabled: false,
   throttleLargeChanges: true,
+  markdownMomentDeck: 'off',
+  markdownMomentEnabled: disabledMarkdownMoments(),
   preset: 'classic'
 }
 
@@ -119,6 +141,22 @@ export const PRESET_SETTINGS: Record<JokerTypePreset, Partial<JokerTypeSettings>
     editorShake: false,
     statusComboEnabled: true,
     throttleLargeChanges: true
+  },
+  prism: {
+    enabled: true,
+    soundEnabled: true,
+    soundStyle: 'sampled',
+    volume: 0.7,
+    visualTheme: 'prism',
+    effectIntensity: 'medium',
+    textGlyphsEnabled: true,
+    enterEffectsEnabled: true,
+    deleteEffectsEnabled: true,
+    glyphLifetimeMs: 1300,
+    cornerBracketsEnabled: true,
+    editorShake: false,
+    statusComboEnabled: true,
+    throttleLargeChanges: true
   }
 }
 
@@ -127,5 +165,35 @@ export function applyPreset(settings: JokerTypeSettings, preset: JokerTypePreset
     ...settings,
     ...PRESET_SETTINGS[preset],
     preset
+  }
+}
+
+export function applyMarkdownMomentDeck(settings: JokerTypeSettings, deck: Exclude<MarkdownMomentDeck, 'custom'>): JokerTypeSettings {
+  const enabled = disabledMarkdownMoments()
+  const selected = deck === 'essentials' ? ESSENTIAL_MARKDOWN_MOMENTS : deck === 'full-deck' ? MARKDOWN_MOMENTS : []
+  for (const moment of selected) enabled[moment] = true
+  return { ...settings, markdownMomentDeck: deck, markdownMomentEnabled: enabled }
+}
+
+export function deckForMarkdownMoments(enabled: Record<MarkdownMoment, boolean>): MarkdownMomentDeck {
+  const active = MARKDOWN_MOMENTS.filter((moment) => enabled[moment])
+  if (active.length === 0) return 'off'
+  if (active.length === MARKDOWN_MOMENTS.length) return 'full-deck'
+  if (active.length === ESSENTIAL_MARKDOWN_MOMENTS.length && ESSENTIAL_MARKDOWN_MOMENTS.every((moment) => enabled[moment])) return 'essentials'
+  return 'custom'
+}
+
+function disabledMarkdownMoments(): Record<MarkdownMoment, boolean> {
+  return {
+    title: false,
+    linked: false,
+    embedded: false,
+    quest: false,
+    cleared: false,
+    summoned: false,
+    'locked-in': false,
+    cited: false,
+    dealt: false,
+    grid: false
   }
 }

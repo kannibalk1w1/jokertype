@@ -1,0 +1,42 @@
+name: Bug report
+description: Help us reproduce a JokerType problem.
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Tell us what you expected and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Enable JokerType
+        2. Open a note
+        3. Type ...
+    validations:
+      required: true
+  - type: input
+    id: obsidian-version
+    attributes:
+      label: Obsidian version
+      placeholder: e.g. 1.8.10
+    validations:
+      required: true
+  - type: input
+    id: jokertype-version
+    attributes:
+      label: JokerType version
+      placeholder: e.g. 1.1.0
+    validations:
+      required: true
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Include console errors, settings, screenshots, or a short recording if relevant.

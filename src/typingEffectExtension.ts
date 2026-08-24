@@ -1,9 +1,11 @@
 import { ViewPlugin, type ViewUpdate, type EditorView } from '@codemirror/view'
 import type { Extension } from '@codemirror/state'
-import { classifyTextChange, type TypingEffectEvent } from './changeClassifier'
+import { classifyTextChange, momentEffectEvent, type TypingEffectEvent } from './changeClassifier'
+import { detectMarkdownMoment } from './markdownMomentClassifier'
 import { AudioEngine } from './audioEngine'
 import { EffectOverlay } from './effectOverlay'
 import type { JokerTypeSettings } from './settings'
+import { DEFAULT_SETTINGS } from './settingsModel'
 
 export interface TypingEffectExtensionOptions {
   getSettings: () => JokerTypeSettings
@@ -29,17 +31,23 @@ class TypingEffectPlugin {
     if (!settings.enabled) return
 
     const events = eventsFromUpdate(update, settings)
-    let spawned = 0
-    let missedCoords = 0
     let audio = 0
 
     for (const event of events) {
-      if (this.overlay.spawn(event, settings)) spawned += 1
-      else missedCoords += 1
       if (this.options.audio.play(event, settings)) audio += 1
     }
 
-    if (events.length > 0) this.options.onEvents?.({ events: events.length, spawned, missedCoords, audio })
+    if (events.length === 0) return
+
+    window.requestAnimationFrame(() => {
+      let spawned = 0
+      let missedCoords = 0
+      for (const event of events) {
+        if (this.overlay.spawn(event, settings)) spawned += 1
+        else missedCoords += 1
+      }
+      this.options.onEvents?.({ events: events.length, spawned, missedCoords, audio })
+    })
   }
 
   destroy(): void {
@@ -47,7 +55,7 @@ class TypingEffectPlugin {
   }
 }
 
-export function eventsFromUpdate(update: ViewUpdate, settings: Pick<JokerTypeSettings, 'throttleLargeChanges'> = { throttleLargeChanges: false }): TypingEffectEvent[] {
+export function eventsFromUpdate(update: ViewUpdate, settings: Pick<JokerTypeSettings, 'throttleLargeChanges' | 'markdownMomentEnabled'> = { throttleLargeChanges: false, markdownMomentEnabled: DEFAULT_SETTINGS.markdownMomentEnabled }): TypingEffectEvent[] {
   const events: TypingEffectEvent[] = []
 
   for (const transaction of update.transactions) {
@@ -69,6 +77,22 @@ export function eventsFromUpdate(update: ViewUpdate, settings: Pick<JokerTypeSet
         deleteDirection,
         throttleLargeChanges: settings.throttleLargeChanges
       }))
+      if (Object.values(settings.markdownMomentEnabled).some(Boolean)) {
+        const moment = detectMarkdownMoment({
+          before: transaction.startState.doc.toString(),
+          after: transaction.newDoc.toString(),
+          change: {
+            fromA,
+            toA,
+            fromB,
+            toB: _toB,
+            inserted: insertedText,
+            isPaste: transaction.isUserEvent('input.paste')
+          },
+          throttleLargeChanges: settings.throttleLargeChanges
+        })
+        if (moment && settings.markdownMomentEnabled[moment.moment]) events.push(momentEffectEvent(moment))
+      }
     })
   }
 

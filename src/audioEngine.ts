@@ -75,7 +75,7 @@ export class AudioEngine {
 
       if (event.type === 'delete') return false
 
-      const buffer = event.type === 'enter' ? this.enterBuffer : this.typeBuffer
+      const buffer = event.type === 'enter' || event.type === 'moment' ? this.enterBuffer : this.typeBuffer
 
       if (buffer) {
         playBuffer(ctx, buffer, pitch, sampleGainFor(options.effectIntensity, options.volume))
@@ -155,7 +155,7 @@ export class AudioEngine {
       return null
     }
 
-    if (event.type === 'enter') return this.customEnterBuffer ?? this.customTypeBuffer
+    if (event.type === 'enter' || event.type === 'moment') return this.customEnterBuffer ?? this.customTypeBuffer
     if (event.type === 'delete') return this.customDeleteBuffer
     if (event.type === 'chunk') return this.customPasteBuffer ?? this.customTypeBuffer
     if (event.type === 'char' && event.text === ' ') return this.customSpaceBuffer ?? this.customTypeBuffer
@@ -283,7 +283,7 @@ function customSoundKey(options: AudioEngineOptions): string {
 
 function soundSpecFor(type: TypingEffectEvent['type'], intensity: EffectIntensity, volume: number): SoundSpec {
   const gain = gainFor(intensity, volume)
-  if (type === 'enter') {
+  if (type === 'enter' || type === 'moment') {
     return {
       duration: 0.11,
       voices: [
