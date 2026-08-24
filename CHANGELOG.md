@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.1
+
+- Moved the embedded pixel font declaration into `styles.css`, which Obsidian loads safely for every plugin window.
+- Updated UI code to use Obsidian element helpers, popout-safe timers, and clearer command and settings labels.
+
 ## 1.3.0
 
 - Added the Full Deck: note embeds (`EMBEDDED`), callouts (`SUMMONED`), closed code blocks (`LOCKED IN`), footnotes (`CITED`), closed frontmatter (`DEALT`), and table divider rows (`GRID!`).

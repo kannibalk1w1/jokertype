@@ -20,7 +20,7 @@ export class JokerTypeSettingTab extends PluginSettingTab {
     containerEl.empty()
 
     new Setting(containerEl)
-      .setName('JokerType')
+      .setName('General')
       .setHeading()
 
     new Setting(containerEl)
@@ -38,7 +38,7 @@ export class JokerTypeSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Hotkey')
-      .setDesc('Assign a hotkey in Obsidian Hotkeys for the command "Toggle JokerType".')
+      .setDesc('Assign a hotkey in Obsidian Hotkeys for the command "Toggle effects".')
       .addButton((button) => {
         button
           .setButtonText(this.plugin.settings.enabled ? 'Disable now' : 'Enable now')
@@ -460,11 +460,11 @@ export class JokerTypeSettingTab extends PluginSettingTab {
   }
 
   private pickSoundFile(onLoad: (dataUrl: string) => void | Promise<void>): void {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = 'audio/*'
+    const input = this.containerEl.createEl('input', { attr: { type: 'file', accept: 'audio/*' } })
+    input.style.display = 'none'
     input.onchange = () => {
       const file = input.files?.[0]
+      input.remove()
       if (!file) return
 
       const reader = new FileReader()

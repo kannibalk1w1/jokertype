@@ -1,20 +1,15 @@
 import type { EditorView } from '@codemirror/view'
 import type { TypingEffectEvent } from './changeClassifier'
-import { M6X11_FONT_BASE64 } from './hyperTypeFont'
 import type { JokerTypeSettings, VisualTheme } from './settings'
 
 const MAX_PARTICLES = 80
-const FONT_STYLE_ID = 'jokertype-hypertype-font'
 
 export class EffectOverlay {
   private root: HTMLDivElement
   private particles = new Set<HTMLElement>()
 
   constructor(private view: EditorView) {
-    ensureHyperTypeFont()
-    this.root = document.createElement('div')
-    this.root.className = 'jokertype-overlay'
-    this.view.dom.appendChild(this.root)
+    this.root = this.view.dom.createDiv({ cls: 'jokertype-overlay' })
   }
 
   spawn(event: TypingEffectEvent, settings: JokerTypeSettings): boolean {
@@ -28,9 +23,10 @@ export class EffectOverlay {
     }
 
     const token = tokenFor(event)
-    const particle = document.createElement('span')
-    particle.className = this.classNameFor(event, settings, token)
-    particle.textContent = token
+    const particle = this.root.createSpan({
+      cls: this.classNameFor(event, settings, token),
+      text: token
+    })
     particle.style.left = `${coords.left}px`
     particle.style.top = `${coords.top}px`
     particle.style.setProperty('--jokertype-color', colorFor(event, token, settings.visualTheme))
@@ -40,7 +36,6 @@ export class EffectOverlay {
     particle.style.setProperty('--jokertype-shadow', shadowFor(event, token, settings.visualTheme))
     particle.style.setProperty('--jokertype-animation', animationFor(event, settings))
     particle.addEventListener('animationend', () => this.removeParticle(particle), { once: true })
-    this.root.appendChild(particle)
     this.particles.add(particle)
 
     if (settings.cornerBracketsEnabled && !settings.reducedMotion && shouldShowCorners(event, token)) {
@@ -79,14 +74,12 @@ export class EffectOverlay {
   }
 
   private spawnCorners(coords: { left: number; top: number; height: number }, token: string, settings: JokerTypeSettings): void {
-    const corners = document.createElement('span')
-    corners.className = `jokertype-corners jokertype-corners-${tokenKind(token)}`
+    const corners = this.root.createSpan({ cls: `jokertype-corners jokertype-corners-${tokenKind(token)}` })
     corners.style.left = `${coords.left}px`
     corners.style.top = `${coords.top + coords.height / 2}px`
     corners.style.setProperty('--jokertype-corner-duration', `${Math.min(620, Math.max(320, settings.glyphLifetimeMs * 0.45))}ms`)
     corners.style.setProperty('--jokertype-corner-color', cornerColorFor(token, settings.visualTheme))
     corners.addEventListener('animationend', () => this.removeParticle(corners), { once: true })
-    this.root.appendChild(corners)
     this.particles.add(corners)
     window.setTimeout(() => this.removeParticle(corners), 700)
   }
@@ -111,14 +104,6 @@ export class EffectOverlay {
     particle.remove()
     this.particles.delete(particle)
   }
-}
-
-function ensureHyperTypeFont(): void {
-  if (document.getElementById(FONT_STYLE_ID)) return
-  const style = document.createElement('style')
-  style.id = FONT_STYLE_ID
-  style.textContent = `@font-face{font-family:"HyperTypePixel";src:url("data:font/ttf;base64,${M6X11_FONT_BASE64}") format("truetype");font-weight:400;font-style:normal;font-display:block;}`
-  document.head.appendChild(style)
 }
 
 function tokenFor(event: TypingEffectEvent): string {

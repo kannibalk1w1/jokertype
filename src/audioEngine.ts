@@ -37,7 +37,7 @@ export interface AudioEngineOptions {
 export class AudioEngine {
   private ctx: AudioContext | null = null
   private streak = new PitchStreak()
-  private resetTimer: ReturnType<typeof setTimeout> | null = null
+  private resetTimer: number | null = null
   private typeBuffer: AudioBuffer | null = null
   private enterBuffer: AudioBuffer | null = null
   private loadingBuffers: Promise<void> | null = null
@@ -92,7 +92,7 @@ export class AudioEngine {
   }
 
   dispose(): void {
-    if (this.resetTimer) clearTimeout(this.resetTimer)
+    if (this.resetTimer) window.clearTimeout(this.resetTimer)
     this.resetTimer = null
     this.streak.reset()
     this.typeBuffer = null
@@ -121,8 +121,8 @@ export class AudioEngine {
 
   private nextPitch(options: Pick<AudioEngineOptions, 'pitchMax' | 'pitchRiseSteps' | 'pitchResetMs'>): number {
     const pitch = this.streak.nextPitch(options.pitchRiseSteps, options.pitchMax)
-    if (this.resetTimer) clearTimeout(this.resetTimer)
-    this.resetTimer = setTimeout(() => this.streak.reset(), Math.max(50, options.pitchResetMs))
+    if (this.resetTimer) window.clearTimeout(this.resetTimer)
+    this.resetTimer = window.setTimeout(() => this.streak.reset(), Math.max(50, options.pitchResetMs))
     return pitch
   }
 

@@ -27,8 +27,8 @@ export default class JokerTypePlugin extends Plugin {
     this.updateStatus()
     this.addSettingTab(new JokerTypeSettingTab(this.app, this))
     this.addCommand({
-      id: 'toggle-jokertype',
-      name: 'Toggle JokerType',
+      id: 'toggle-effects',
+      name: 'Toggle effects',
       callback: () => {
         void this.toggleEnabled()
       }
@@ -45,7 +45,7 @@ export default class JokerTypePlugin extends Plugin {
   onunload(): void {
     for (const overlay of this.fallbackOverlaySet) overlay.destroy()
     this.fallbackOverlaySet.clear()
-    if (this.comboResetTimer) clearTimeout(this.comboResetTimer)
+    if (this.comboResetTimer) window.clearTimeout(this.comboResetTimer)
     this.comboResetTimer = null
     this.audio.dispose()
   }
@@ -261,7 +261,7 @@ export default class JokerTypePlugin extends Plugin {
   private registerCombo(events: number): void {
     if (!this.settings.statusComboEnabled || events <= 0) return
     this.comboCount += events
-    if (this.comboResetTimer) clearTimeout(this.comboResetTimer)
+    if (this.comboResetTimer) window.clearTimeout(this.comboResetTimer)
     this.comboResetTimer = window.setTimeout(() => {
       this.comboCount = 0
       this.updateStatus()
