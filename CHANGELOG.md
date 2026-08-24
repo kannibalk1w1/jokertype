@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.3
+
+- Added the searchable declarative settings API for Obsidian 1.13 and later, including every Markdown Moment control.
+- Kept the prior settings renderer as a compatibility fallback for older Obsidian versions.
+
 ## 1.3.2
 
 - Removed settings markup that Obsidian's plugin reviewer disallows and moved the file-picker styling into `styles.css`.
