@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/github/license/kannibalk1w1/jokertype)](LICENSE)
 [![Obsidian](https://img.shields.io/badge/Obsidian-1.5.0%2B-7c3aed)](https://obsidian.md/plugins?id=jokertype)
 
-JokerType is a desktop-first Obsidian plugin that makes typing feel game-like: pixel glyph particles, special-key labels, rising-pitch typing sounds, and configurable visual themes inspired by HyperType and card-game arcade feedback.
+JokerType makes writing in Obsidian feel alive. It adds pixel glyph effects, responsive typing sounds, and optional Markdown Moments that celebrate meaningful structure in your notes—from headings and links to tasks, embeds, callouts, citations, and tables.
 
 **[Install JokerType in Obsidian](obsidian://show-plugin?id=jokertype)** · **[View releases](https://github.com/kannibalk1w1/jokertype/releases)** · **[Report an issue](https://github.com/kannibalk1w1/jokertype/issues/new/choose)**
 
